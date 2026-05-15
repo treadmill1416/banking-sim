@@ -5,6 +5,10 @@ import { getBalance } from './ledger.js';
 const ADMIN_PRESET_KEY = 'bankrunner-admin-preset';
 
 export function initAdmin() {
+  if (!getState().debug) {
+    document.getElementById('adminBtn').style.display = 'none';
+    return;
+  }
   document.getElementById('adminBtn').addEventListener('click', toggleAdminPanel);
   document.getElementById('adminClose').addEventListener('click', toggleAdminPanel);
   document.getElementById('adminOverlay').addEventListener('click', function (e) {
@@ -26,7 +30,6 @@ function populateFromState() {
   const s = getState();
   document.getElementById('adminReserves').value = getBalance(s, 'cash');
   document.getElementById('adminLoans').value = getBalance(s, 'loansReceivable');
-  document.getElementById('adminBonds').value = getBalance(s, 'bonds');
   document.getElementById('adminDeposits').value = getBalance(s, 'deposits');
   document.getElementById('adminCbBorrowing').value = getBalance(s, 'cbBorrowing');
   document.getElementById('adminLoanRate').value = s.loanRate;
@@ -46,7 +49,6 @@ function readAdminConfig() {
   return {
     reserves: parseFloat(document.getElementById('adminReserves').value) || 0,
     loans: parseFloat(document.getElementById('adminLoans').value) || 0,
-    bonds: parseFloat(document.getElementById('adminBonds').value) || 0,
     deposits: parseFloat(document.getElementById('adminDeposits').value) || 0,
     cbBorrowing: parseFloat(document.getElementById('adminCbBorrowing').value) || 0,
     loanRate: parseFloat(document.getElementById('adminLoanRate').value) || 0,

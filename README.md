@@ -37,9 +37,9 @@ Full sandbox — no win/loss conditions. Keep playing even if equity goes negati
 |---|---|
 | Reserves (at central bank) | Demand deposits |
 | Loans to customers | Central bank borrowing |
-| Government bonds | Equity (capital) |
+| | Equity (capital) |
 
-Starting position: $10M deposits, $8M loans, $2M bonds, $100K equity, $100K reserves (1%). Tight start — any new loan immediately strains reserves.
+Starting position: $10M deposits, $8M loans, $100K equity, $100K reserves (1%). Tight start — any new loan immediately strains reserves.
 
 ## ECB Corridor
 
@@ -49,13 +49,13 @@ Three policy rates that drift ±25bp in response to simulated economic condition
 - **MRO** (mid) — main refinancing rate, policy signal
 - **Marginal lending facility** (ceiling) — penalty rate for borrowing
 
-Interest accrues every tick on loans, deposits, reserves, and CB borrowing at their respective rates.
+Interest accrues every tick on deposits, reserves, and CB borrowing at their respective rates. Loan interest is handled via monthly amortizing payments.
 
 ## Random Events
 
 Each tick (~1 hour) events can fire:
 - **Deposit flows** ±$50K–$500K, influenced by your rate vs market
-- **Loan requests** $100K–$2M with a default probability estimate
+- **Loan requests** sized by power law (peak at 3% of balance sheet), with a default probability estimate
 - **Loan defaults** ~3–5% annualized, varies by economic regime
 - **ECB rate changes** ~2% chance per tick
 - **Regime shifts** between boom / normal / recession — affects loan demand, default risk, deposit flows, and ECB bias
@@ -67,8 +67,8 @@ All values in dollars unless noted. One tick = one game-hour.
 ### Balance Sheet
 
 ```
-equity        = reserves + loans + bonds − deposits − cbBorrowing
-totalAssets   = reserves + loans + bonds
+equity        = reserves + loans − deposits − cbBorrowing
+totalAssets   = reserves + loans
 requiredReserves = deposits × RESERVE_RATIO_TARGET        (1%)
 reserveRatio  = reserves / deposits × 100
 ```
@@ -76,7 +76,7 @@ reserveRatio  = reserves / deposits × 100
 ### Net Interest Margin (annualized)
 
 ```
-earningAssets = loans + bonds + reserves
+earningAssets = loans + reserves
 
 annualLoanIncome    = loans × weightedLoanRate / 100
 annualDepositCost   = deposits × depositRate / 100
@@ -88,24 +88,27 @@ NIM = (annualLoanIncome + annualReserveIncome − annualDepositCost − annualCb
 
 ### Per-Tick Interest Accrual
 
-Every tick, net interest is added to (or subtracted from) reserves:
+Every tick, net interest on deposits, reserves, and CB borrowing is accumulated. Loan interest is handled separately via monthly amortizing payments (see below).
 
 ```
 hourly = 1 / 8760   (TICKS_PER_YEAR)
 
-Δreserves = loans × (weightedLoanRate / 100) × hourly
-          + reserves × (ecbDepositRate / 100) × hourly
+Δreserves = reserves × (ecbDepositRate / 100) × hourly
           − deposits × (depositRate / 100) × hourly
           − cbBorrowing × (ecbMlfRate / 100) × hourly
 ```
 
+Accumulated interest is posted to the ledger every 24 ticks via `postDailyInterest`.
+
 ### P&L Tracking
 
-Running totals accumulate per tick and reset every `TICKS_PER_MONTH` (730 ticks):
+Running totals accumulate per tick (deposit, reserve, CB interest) and are posted to the ledger every 24 ticks. Loan interest is booked via monthly amortizing payments. P&L resets every `TICKS_PER_MONTH` (730 ticks):
 
 ```
-pnl.net = loanInterest + reserveInterest − depositInterest − cbInterest − defaults
+pnl.net = reserveInterestIncome − depositInterest − cbInterest − defaults + loanInterestIncome
 ```
+
+The current month's P&L is computed as the delta between current income/expense account balances and the snapshot taken at the start of the month.
 
 ### Weighted Average Loan Rate
 
@@ -204,25 +207,27 @@ If amount < 0 (outflow): outflow capped at 2% of deposits.
 
 ### Loan Request Generation
 
-Per-tick probability: 6% (scaled internally by `loanRequestsPerMonth / 730`).
+Per-tick probability: controlled by `loanRequestsPerMonth / TICKS_PER_MONTH`.
 
 ```
-demandMult       = REGIME_LOAN_DEMAND[regime]
-rateElasticity   = max(0.1, 1 − (loanRate − 5) × 0.08)
-baseAmount       = 100000 + random() × 1900000
-amount           = baseAmount × demandMult × rateElasticity
-riskMult         = REGIME_DEFAULT_RISK[regime]
-defaultProb      = min((0.5 + random() × 12) × riskMult, 35)
-duration         = 3 + floor(random() × 34) months
+modeTarget    = totalAssets × (loanDemandPeakPct / 100)      (default 3%)
+alpha         = 2
+rawAmount     = modeTarget / random()^(1/alpha)               (Pareto power law)
+amount        = min(rawAmount, totalAssets × 0.9)
+
+defaultProb   = min((0.5 + random() × 12) × REGIME_DEFAULT_RISK[regime], 35)
+duration      = 3 + floor(random() × 34) months
 ```
+
+Most loan requests cluster around `loanDemandPeakPct`% of the balance sheet. The Pareto tail (α=2) produces occasional larger requests — some at 10× the mode, very rarely up to 90% of total assets.
 
 Loan demand by regime:
 
-| Regime    | Demand Mult | Default Risk Mult |
-|-----------|------------|-------------------|
-| boom      | 1.8        | 0.4               |
-| normal    | 1.0        | 1.0               |
-| recession | 0.4        | 2.5               |
+| Regime    | Default Risk Mult |
+|-----------|-------------------|
+| boom      | 0.4               |
+| normal    | 1.0               |
+| recession | 2.5               |
 
 ### ECB Policy Rate Changes
 
@@ -254,14 +259,24 @@ Per-tick probability: 0.3%. Transition matrix:
 | normal    | 0.05 | 0.9    | 0.05      |
 | recession | 0.1  | 0.8    | 0.1       |
 
-### Loan Maturities
+### Loan Payments (Amortizing)
 
-Default duration: 3–36 months at origination.
+Loans are amortized monthly with equal principal payments. Duration: 3–36 months at origination.
+
+First payment is due immediately on the day of approval; subsequent payments fall on the 1st of each game‑month (`tick % TICKS_PER_MONTH === 0`).
 
 ```
-if currentTick − createdAt ≥ durationTicks → repaid
-loans −= loan.amount
+monthlyRate  = rate / 100 / 12
+interest     = remainingBalance × monthlyRate
+principal    = min(loanAmount / durationMonths, remainingBalance)
+total        = principal + interest
+
+deposits         −= total     (Dr)
+loansReceivable  −= principal (Cr)
+interestIncome   += interest  (Cr)
 ```
+
+After the final payment (`remainingBalance < 0.005`) the loan is marked `repaid`.
 
 ### Reserve Auto-Borrowing
 
@@ -294,7 +309,7 @@ Date: new Date(2026, 0, 1) + tick × 3600000 ms
 | `RATE_MIN` / `RATE_MAX` | 0 / 10 |
 | `LOAN_RATE_MIN` / `LOAN_RATE_MAX` | 0.5% / 20% |
 | `DEPO_RATE_MIN` / `DEPO_RATE_MAX` | 0% / 10% |
-| `LOAN_EXPIRY_TICKS` | 24 (hours) |
+| `LOAN_EXPIRY_TICKS` | 730 (1 month) |
 | `NPL_WINDOW` | 720 (~1 month) |
 | `DEPO_STABILITY_PROB` | 0.002 |
 | `DEPO_STABILITY_RATE` | 0.0005 |
@@ -313,6 +328,7 @@ Date: new Date(2026, 0, 1) + tick × 3600000 ms
     ├── constants.js   # Config: initial state, probabilities, regime tables
     ├── state.js       # State management, save/load (localStorage)
     ├── mechanics.js   # Core logic: interest, defaults, reserves
+    ├── admin.js       # Admin panel (toggle with debug flag)
     ├── events.js      # Random event generators
     ├── actions.js     # Player actions: approve, reject, CB desk
     ├── ui.js          # DOM rendering: balance sheet, metrics, logs

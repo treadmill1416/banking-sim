@@ -15,14 +15,12 @@ export function updateUI() {
 
   const cash = getBalance(s, 'cash');
   const loans = getBalance(s, 'loansReceivable');
-  const bonds = getBalance(s, 'bonds');
   const deposits = getBalance(s, 'deposits');
   const cb = getBalance(s, 'cbBorrowing');
 
   document.getElementById('bsReserves').textContent = fmtDollar(cash);
   document.getElementById('bsLoans').textContent = fmtDollar(loans);
-  document.getElementById('bsBonds').textContent = fmtDollar(bonds);
-  document.getElementById('bsAssetsTotal').textContent = fmtDollar(cash + loans + bonds);
+  document.getElementById('bsAssetsTotal').textContent = fmtDollar(cash + loans);
   document.getElementById('bsDeposits').textContent = fmtDollar(deposits);
   document.getElementById('bsCbBorrowing').textContent = fmtDollar(cb);
   const eq = equity(s);
@@ -140,7 +138,6 @@ export function updateLedgerDisplay() {
   const bsAccounts = [
     { label: 'Cash', acct: 'cash' },
     { label: 'Loans Receivable', acct: 'loansReceivable' },
-    { label: 'Bonds', acct: 'bonds' },
     { label: 'Deposits', acct: 'deposits' },
     { label: 'CB Borrowing', acct: 'cbBorrowing' },
     { label: 'Equity', acct: 'equity' },
@@ -333,8 +330,7 @@ export function updateAccountingTab() {
       '<div class="acct-section">Assets</div>' +
       acctRow('Cash', b.cash || 0) +
       acctRow('Loans Receivable', b.loansReceivable || 0) +
-      acctRow('Bonds', b.bonds || 0) +
-      acctRow('Total Assets', (b.cash || 0) + (b.loansReceivable || 0) + (b.bonds || 0), 'total') +
+      acctRow('Total Assets', (b.cash || 0) + (b.loansReceivable || 0), 'total') +
       '<div class="acct-section">Liabilities</div>' +
       acctRow('Deposits', b.deposits || 0) +
       acctRow('CB Borrowing', b.cbBorrowing || 0) +
@@ -360,7 +356,6 @@ export function updateAccountingTab() {
     const accounts = [
       { label: 'Cash', acct: 'cash' },
       { label: 'Loans Receivable', acct: 'loansReceivable' },
-      { label: 'Bonds', acct: 'bonds' },
       { label: 'Deposits', acct: 'deposits' },
       { label: 'CB Borrowing', acct: 'cbBorrowing' },
       { label: 'Equity', acct: 'equity' },

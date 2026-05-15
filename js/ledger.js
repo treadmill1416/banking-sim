@@ -1,7 +1,6 @@
 export const ACCOUNT_TYPES = {
   cash: 'asset',
   loansReceivable: 'asset',
-  bonds: 'asset',
   deposits: 'liability',
   cbBorrowing: 'liability',
   equity: 'equity',
@@ -21,12 +20,11 @@ export function initLedger(s) {
   s.ledgerMonthStart = null;
   s.ledgerLastMonth = null;
 
-  const eq = (s.reserves || 0) + (s.loans || 0) + (s.bonds || 0)
+  const eq = (s.reserves || 0) + (s.loans || 0)
            - (s.deposits || 0) - (s.cbBorrowing || 0);
   postJournal(s, [
     { account: 'cash', debit: s.reserves || 0 },
     { account: 'loansReceivable', debit: s.loans || 0 },
-    { account: 'bonds', debit: s.bonds || 0 },
     { account: 'deposits', credit: s.deposits || 0 },
     { account: 'cbBorrowing', credit: s.cbBorrowing || 0 },
     { account: 'equity', credit: eq },
@@ -88,7 +86,7 @@ export function getBalance(s, account) {
 
 export function getEquity(s) {
   const b = s.ledgerBalances;
-  const assets = (b.cash || 0) + (b.loansReceivable || 0) + (b.bonds || 0);
+  const assets = (b.cash || 0) + (b.loansReceivable || 0);
   const liabilities = (b.deposits || 0) + (b.cbBorrowing || 0);
   return assets - liabilities;
 }

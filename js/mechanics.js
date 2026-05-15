@@ -12,7 +12,7 @@ export function equity(s) {
 }
 
 export function totalAssets(s) {
-  return getBalance(s, 'cash') + getBalance(s, 'loansReceivable') + getBalance(s, 'bonds');
+  return getBalance(s, 'cash') + getBalance(s, 'loansReceivable');
 }
 
 export function reserveRatio(s) {
@@ -23,10 +23,9 @@ export function reserveRatio(s) {
 export function computeNim(s) {
   const loans = getBalance(s, 'loansReceivable');
   const cash = getBalance(s, 'cash');
-  const bonds = getBalance(s, 'bonds');
   const deposits = getBalance(s, 'deposits');
   const cb = getBalance(s, 'cbBorrowing');
-  const ea = loans + bonds + cash;
+  const ea = loans + cash;
   if (ea < 1) return 0;
   const annualLoan = loans * (s.weightedLoanRate / 100);
   const annualDepo = deposits * (s.depositRate / 100);

@@ -1,4 +1,4 @@
-import { TICKS_PER_YEAR, RESERVE_RATIO_TARGET, NPL_WINDOW, DEFAULT_WINDOW, REGIME_MULTIPLIERS, DEFAULT_ANNUAL_RATE, PROB } from './constants.js';
+import { TICKS_PER_YEAR, RESERVE_RATIO_TARGET, NPL_WINDOW, DEFAULT_WINDOW, REGIME_MULTIPLIERS, DEFAULT_ANNUAL_RATE, PROB, LOAN_EXPIRY_TICKS } from './constants.js';
 import { addEvent } from './state.js';
 import { fmtDollar } from './utils.js';
 
@@ -69,9 +69,23 @@ export function processDefaults(s) {
 export function checkReserves(s) {
   const req = requiredReserves(s);
   if (s.reserves < req) {
-    const deficit = req - s.reserves;
-    s.cbBorrowing += deficit;
-    s.reserves += deficit;
-    addEvent(s, 'cb', 'Auto-borrowed ' + fmtDollar(deficit) + ' from CB (reserve shortfall)', 'event-expense');
+    if (s.autoCbBorrowing) {
+      const deficit = req - s.reserves;
+      s.cbBorrowing += deficit;
+      s.reserves += deficit;
+      addEvent(s, 'cb', 'Auto-borrowed ' + fmtDollar(deficit) + ' from CB (reserve shortfall)', 'event-expense');
+    } else {
+      addEvent(s, 'cb', 'Reserves below requirement! Borrow from CB desk.', 'event-warn');
+    }
+  }
+}
+
+export function expireOldLoans(s) {
+  for (const e of s.eventLog) {
+    if (e.type === 'loan_request' && e.approved === undefined && s.tick - e.tick >= LOAN_EXPIRY_TICKS) {
+      e.approved = false;
+      e.msg += ' — EXPIRED';
+      e.cls = 'event-expense';
+    }
   }
 }

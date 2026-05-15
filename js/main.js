@@ -1,5 +1,5 @@
 import { getState, setState, createInitialState, load, save, reset as resetState } from './state.js';
-import { accrueInterest, processDefaults, checkReserves, reserveRatio, computeNim, equity } from './mechanics.js';
+import { accrueInterest, processDefaults, checkReserves, expireOldLoans, reserveRatio, computeNim, equity } from './mechanics.js';
 import { tryDepositFlow, tryLoanRequest, tryEcbChange, tryRegimeChange } from './events.js';
 import { approveLoan, rejectLoan, cbBorrow, cbRepay } from './actions.js';
 import { updateUI, updateEventLog, updateLoanApps } from './ui.js';
@@ -18,6 +18,7 @@ function tick() {
   tryLoanRequest(s);
   tryEcbChange(s);
   tryRegimeChange(s);
+  expireOldLoans(s);
   checkReserves(s);
 
   s.historyRR.push(reserveRatio(s));
@@ -62,13 +63,17 @@ function togglePause() {
 
 function resetGame() {
   if (!confirm('Reset game? All progress will be lost.')) return;
+  if (intervalId) { clearInterval(intervalId); intervalId = null; }
   resetState();
   const s = getState();
   s.historyRR.push(reserveRatio(s));
   s.historyNIM.push(computeNim(s));
   s.historyEQ.push(equity(s));
   document.getElementById('autoAcceptSlider').value = s.autoAcceptThreshold;
+  document.getElementById('autoCbCheckbox').checked = s.autoCbBorrowing;
+  document.getElementById('pauseBtn').textContent = s.paused ? '▶' : '⏸';
   updateAll();
+  updateLoop();
 }
 
 // --- Event delegation ---
@@ -122,6 +127,11 @@ function bindEvents() {
     document.getElementById('autoAcceptDisplay').textContent = getState().autoAcceptThreshold.toFixed(1) + '%';
     save();
   });
+
+  document.getElementById('autoCbCheckbox').addEventListener('change', function () {
+    getState().autoCbBorrowing = this.checked;
+    save();
+  });
 }
 
 function init() {
@@ -137,6 +147,7 @@ function init() {
   document.querySelector('.speed-btn[data-speed="' + s.speed + '"]')?.classList.add('active');
   if (s.paused) document.getElementById('pauseBtn').textContent = '▶';
   document.getElementById('autoAcceptSlider').value = s.autoAcceptThreshold;
+  document.getElementById('autoCbCheckbox').checked = s.autoCbBorrowing;
   bindEvents();
   updateAll();
   updateLoop();

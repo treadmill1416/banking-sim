@@ -94,3 +94,6 @@ input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;bac
 .la-amount{font-size:14px;font-weight:600;font-family:'SF Mono','Cascadia Code','Consolas',monospace;color:#f0f6fc}
 .la-prob{font-size:11px;color:#8b949e}
 .la-btns{display:flex;gap:4px;flex-shrink:0}
+.config-pane{margin-bottom:12px}
+.cfg-row{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:#c9d1d9;padding:4px 0}
+.cfg-row input[type=checkbox]{width:16px;height:16px;accent-color:#58a6ff;cursor:pointer}

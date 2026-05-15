@@ -16,10 +16,12 @@ export const DEPO_RATE_MIN = 0;
 export const DEPO_RATE_MAX = 10;
 export const DEPO_RATE_STEP = 0.25;
 
+export const LOAN_EXPIRY_TICKS = 24;
+
 export const INITIAL = {
   tick: 0,
   speed: 10,
-  paused: false,
+  paused: true,
   reserves: 100000,
   loans: 8000000,
   bonds: 2000000,
@@ -40,7 +42,8 @@ export const INITIAL = {
   cumulativeDefaults: 0,
   defaultTicks: [],
   defaultAmounts: [],
-  autoAcceptThreshold: 0
+  autoAcceptThreshold: 0,
+  autoCbBorrowing: true
 };
 
 export const REGIME_MULTIPLIERS = { boom: 0.5, normal: 1, recession: 2.5 };

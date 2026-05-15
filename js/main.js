@@ -17,6 +17,7 @@ function tick() {
 
   accrueInterest(s);
   processDefaults(s);
+  updateLedgerPnl(s);
   processLoanPayments(s);
   tryDepositFlow(s);
   tryDepositStability(s);
@@ -27,7 +28,6 @@ function tick() {
   checkReserves(s);
 
   if (s.tick % 24 === 0) postDailyInterest(s);
-  updateLedgerPnl(s);
 
   s.defaultRateHistory.push(computeDefaultRate(s));
   if (s.defaultRateHistory.length > HISTORY_MAX) s.defaultRateHistory.shift();

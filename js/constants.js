@@ -16,7 +16,7 @@ export const DEPO_RATE_MIN = 0;
 export const DEPO_RATE_MAX = 10;
 export const DEPO_RATE_STEP = 0.25;
 
-export const LOAN_EXPIRY_TICKS = 24;
+export const LOAN_EXPIRY_TICKS = 730;
 export const LOAN_DEFAULT_DURATION = 8760;
 export const TICKS_PER_MONTH = 730;
 export const DEPO_STABILITY_PROB = 0.002;
@@ -27,9 +27,9 @@ export const INITIAL = {
   speed: 10,
   paused: true,
   reserves: 100000,
-  loans: 8000000,
-  bonds: 2000000,
-  deposits: 10000000,
+  loans: 0,
+  bonds: 0,
+  deposits: 0,
   cbBorrowing: 0,
   loanRate: 5.50,
   depositRate: 1.50,

@@ -113,6 +113,23 @@ export function processLoanApproval(s, entry, rate) {
   } else {
     s.weightedLoanRate = rate;
   }
+
+  const monthlyRate = rate / 100 / 12;
+  const intFirst = entry.loanAmount * monthlyRate;
+  const prinFirst = Math.min(lr.monthlyPrincipal, entry.loanAmount);
+  const totalFirst = intFirst + prinFirst;
+  postJournal(s, [
+    { account: 'deposits', debit: totalFirst },
+    { account: 'loansReceivable', credit: prinFirst },
+    { account: 'interestIncome', credit: intFirst },
+  ], 'Initial payment - ' + lr.id);
+  lr.remainingBalance = entry.loanAmount - prinFirst;
+  if (lr.remainingBalance < 0.005) {
+    lr.status = 'repaid';
+    lr.repaidAtTick = s.tick;
+    addEvent(s, 'loan', 'Loan fully repaid: ' + fmtDollar(lr.amount) + ' (' + lr.id + ')', 'event-income');
+  }
+
   entry.msg += ' — APPROVED at ' + rate.toFixed(2) + '%';
   entry.cls = 'event-income';
   addEvent(s, 'loan', 'Loan approved: ' + fmtDollar(entry.loanAmount) + ' at ' + rate.toFixed(2) + '%', 'event-income');
@@ -120,10 +137,11 @@ export function processLoanApproval(s, entry, rate) {
 }
 
 export function processLoanPayments(s) {
+  if (s.tick % TICKS_PER_MONTH !== 0) return;
   let changed = false;
   for (const lr of s.loanRecords) {
     if (lr.status !== 'active' || lr.durationMonths == null) continue;
-    if (s.tick - lr.lastPaymentTick < TICKS_PER_MONTH) continue;
+    if (lr.lastPaymentTick >= s.tick) continue;
 
     const monthlyRate = lr.rate / 100 / 12;
     const interest = lr.remainingBalance * monthlyRate;

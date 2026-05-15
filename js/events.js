@@ -45,7 +45,7 @@ export function tryLoanRequest(s) {
   const maxLoan = ta * 0.9;
   const amount = Math.min(raw, maxLoan);
   const riskMult = REGIME_DEFAULT_RISK[s.regime];
-  const defaultProb = Math.min((0.5 + Math.random() * 12) * riskMult, 35);
+  const defaultProb = Math.min((1 + Math.random() * 35) * riskMult, 50);
   const id = 'lr-' + s.nextEventId;
   const entry = addEvent(s, 'loan_request', 'Loan request: ' + fmtDollar(amount), 'event-info', {
     loanAmount: amount,

@@ -21,6 +21,7 @@
     <button class="speed-btn" data-speed="10">10×</button>
     <button class="pause-btn" id="pauseBtn">⏸</button>
     <button class="speed-btn" id="resetBtn" title="Reset game" style="font-size:13px">↺</button>
+    <button class="speed-btn" id="adminBtn" title="Admin settings" style="font-size:13px">⚙</button>
   </div>
 </div>
 
@@ -66,7 +67,7 @@
       </div>
     </div>
     <div class="slider-group">
-      <div class="slider-label"><span>Loan Rate</span><span class="rate-val" id="loanRateDisplay">5.50%</span></div>
+      <div class="slider-label"><span>Loan Rate (auto-accept)</span><span class="rate-val" id="loanRateDisplay">5.50%</span></div>
       <input type="range" id="loanRateSlider" min="0.5" max="20" step="0.25" value="5.5">
     </div>
     <div class="slider-group">
@@ -120,6 +121,89 @@
   <div class="chart-card"><svg id="chartNim"></svg></div>
   <div class="chart-card"><svg id="chartEquity"></svg></div>
 </div>
+</div>
+
+<div class="admin-overlay" id="adminOverlay" style="display:none">
+  <div class="admin-modal">
+    <div class="admin-header">
+      <h2>Admin Interface</h2>
+      <button class="admin-close" id="adminClose">✕</button>
+    </div>
+    <div class="admin-body">
+      <div class="admin-section">
+        <h3>Balance Sheet (Initial Values)</h3>
+        <div class="admin-field">
+          <label>Reserves</label>
+          <input type="number" id="adminReserves" value="100000">
+        </div>
+        <div class="admin-field">
+          <label>Loans</label>
+          <input type="number" id="adminLoans" value="8000000">
+        </div>
+        <div class="admin-field">
+          <label>Bonds</label>
+          <input type="number" id="adminBonds" value="2000000">
+        </div>
+        <div class="admin-field">
+          <label>Deposits</label>
+          <input type="number" id="adminDeposits" value="10000000">
+        </div>
+        <div class="admin-field">
+          <label>CB Borrowing</label>
+          <input type="number" id="adminCbBorrowing" value="0">
+        </div>
+      </div>
+      <div class="admin-section">
+        <h3>Interest Rates (%)</h3>
+        <div class="admin-field">
+          <label>Loan Rate</label>
+          <input type="number" id="adminLoanRate" value="5.50" step="0.25" min="0.5" max="20">
+        </div>
+        <div class="admin-field">
+          <label>Deposit Rate</label>
+          <input type="number" id="adminDepositRate" value="1.50" step="0.25" min="0" max="10">
+        </div>
+        <div class="admin-field">
+          <label>ECB Deposit Rate</label>
+          <input type="number" id="adminEcbDepositRate" value="3.75" step="0.25">
+        </div>
+        <div class="admin-field">
+          <label>ECB MRO Rate</label>
+          <input type="number" id="adminEcbMroRate" value="4.00" step="0.25">
+        </div>
+        <div class="admin-field">
+          <label>ECB MLF Rate</label>
+          <input type="number" id="adminEcbMlfRate" value="4.25" step="0.25">
+        </div>
+      </div>
+      <div class="admin-section">
+        <h3>Other Settings</h3>
+        <div class="admin-field">
+          <label>Regime</label>
+          <select id="adminRegime">
+            <option value="boom">Boom</option>
+            <option value="normal" selected>Normal</option>
+            <option value="recession">Recession</option>
+          </select>
+        </div>
+        <div class="admin-field">
+          <label>Auto-accept Threshold (%)</label>
+          <input type="number" id="adminAutoAccept" value="0" step="0.5" min="0" max="25">
+        </div>
+        <div class="admin-field admin-cb-row">
+          <label>
+            <input type="checkbox" id="adminAutoCb" checked>
+            Auto-borrow from CB
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="admin-footer">
+      <button class="admin-btn primary" id="adminApplyBtn">Apply &amp; Reset Game</button>
+      <button class="admin-btn" id="adminSavePresetBtn">Save as Preset</button>
+      <button class="admin-btn" id="adminLoadPresetBtn">Load Preset</button>
+    </div>
+  </div>
 </div>
 
 <script type="module" src="js/main.js"></script>

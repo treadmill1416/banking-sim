@@ -93,7 +93,9 @@ input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;bac
 .la-info{display:flex;flex-direction:column;gap:1px}
 .la-amount{font-size:14px;font-weight:600;font-family:'SF Mono','Cascadia Code','Consolas',monospace;color:#f0f6fc}
 .la-prob{font-size:11px;color:#8b949e}
-.la-btns{display:flex;gap:4px;flex-shrink:0}
+.la-btns{display:flex;gap:4px;flex-shrink:0;align-items:center}
+.rate-input{width:60px;background:#0d1117;border:1px solid #30363d;border-radius:3px;padding:2px 4px;color:#c9d1d9;font-size:11px;font-family:'SF Mono','Cascadia Code','Consolas',monospace;text-align:center}
+.rate-input:focus{outline:none;border-color:#58a6ff}
 .config-pane{margin-bottom:12px}
 .cfg-row{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:#c9d1d9;padding:4px 0}
 .cfg-row input[type=checkbox]{width:16px;height:16px;accent-color:#58a6ff;cursor:pointer}

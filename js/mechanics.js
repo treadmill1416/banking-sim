@@ -21,7 +21,7 @@ export function reserveRatio(s) {
 export function computeNim(s) {
   const ea = s.loans + s.bonds + s.reserves;
   if (ea < 1) return 0;
-  const annualLoan = s.loans * (s.loanRate / 100);
+  const annualLoan = s.loans * (s.weightedLoanRate / 100);
   const annualDepo = s.deposits * (s.depositRate / 100);
   const annualRes = s.reserves * (s.ecbDepositRate / 100);
   const annualCb = s.cbBorrowing * (s.ecbMlfRate / 100);
@@ -40,12 +40,40 @@ export function trailingNpl(s) {
 
 export function accrueInterest(s) {
   const hourly = 1 / TICKS_PER_YEAR;
-  const loanInt = s.loans * (s.loanRate / 100) * hourly;
+  const loanInt = s.loans * (s.weightedLoanRate / 100) * hourly;
   const depoInt = s.deposits * (s.depositRate / 100) * hourly;
   const resInt = s.reserves * (s.ecbDepositRate / 100) * hourly;
   const cbInt = s.cbBorrowing * (s.ecbMlfRate / 100) * hourly;
   const net = loanInt + resInt - depoInt - cbInt;
   s.reserves += net;
+}
+
+export function customerRefuses(s, rate) {
+  const spread = Math.max(0, rate - s.ecbMroRate);
+  const refusalProb = Math.max(5, Math.min(95, spread * REGIME_MULTIPLIERS[s.regime] * 8));
+  return Math.random() < refusalProb / 100;
+}
+
+export function processLoanApproval(s, entry, rate) {
+  entry.approved = true;
+  if (customerRefuses(s, rate)) {
+    entry.msg += ' — CUSTOMER REFUSED';
+    entry.cls = 'event-expense';
+    addEvent(s, 'loan', 'Customer refused loan of ' + fmtDollar(entry.loanAmount) + ' at ' + rate.toFixed(2) + '%', 'event-expense');
+    return;
+  }
+  const oldLoans = s.loans;
+  s.loans += entry.loanAmount;
+  s.deposits += entry.loanAmount;
+  if (oldLoans > 0) {
+    s.weightedLoanRate = (oldLoans * s.weightedLoanRate + entry.loanAmount * rate) / s.loans;
+  } else {
+    s.weightedLoanRate = rate;
+  }
+  entry.msg += ' — APPROVED at ' + rate.toFixed(2) + '%';
+  entry.cls = 'event-income';
+  addEvent(s, 'loan', 'Loan approved: ' + fmtDollar(entry.loanAmount) + ' at ' + rate.toFixed(2) + '%', 'event-income');
+  checkReserves(s);
 }
 
 export function processDefaults(s) {

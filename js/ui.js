@@ -84,6 +84,7 @@ export function updateLoanApps() {
     html += '<span class="la-prob">Default risk: ' + e.defaultProb.toFixed(1) + '%</span>';
     html += '</div>';
     html += '<div class="la-btns">';
+    html += '<input type="number" class="rate-input" data-id="' + e.loanRequestId + '" value="' + (e.proposedRate || s.loanRate).toFixed(2) + '" step="0.25" min="0.5" max="20">';
     html += '<button class="event-btn approve" data-action="approve" data-id="' + e.loanRequestId + '">APPROVE</button>';
     html += '<button class="event-btn reject" data-action="reject" data-id="' + e.loanRequestId + '">REJECT</button>';
     html += '</div></div>';

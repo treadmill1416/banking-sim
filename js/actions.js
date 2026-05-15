@@ -1,19 +1,15 @@
 import { getState } from './state.js';
 import { addEvent } from './state.js';
-import { checkReserves } from './mechanics.js';
+import { checkReserves, processLoanApproval } from './mechanics.js';
 import { fmtDollar } from './utils.js';
 
 export function approveLoan(id) {
   const s = getState();
   const entry = s.eventLog.find(e => e.loanRequestId === id && e.type === 'loan_request');
   if (!entry || entry.approved !== undefined) return;
-  s.loans += entry.loanAmount;
-  s.deposits += entry.loanAmount;
-  entry.approved = true;
-  entry.msg += ' — APPROVED';
-  entry.cls = 'event-income';
-  addEvent(s, 'loan', 'Loan approved: ' + fmtDollar(entry.loanAmount), 'event-income');
-  checkReserves(s);
+  const rateInput = document.querySelector(`.rate-input[data-id="${id}"]`);
+  const rate = rateInput ? parseFloat(rateInput.value) || s.loanRate : s.loanRate;
+  processLoanApproval(s, entry, rate);
 }
 
 export function rejectLoan(id) {

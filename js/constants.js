@@ -43,7 +43,8 @@ export const INITIAL = {
   defaultTicks: [],
   defaultAmounts: [],
   autoAcceptThreshold: 0,
-  autoCbBorrowing: true
+  autoCbBorrowing: true,
+  weightedLoanRate: 5.50
 };
 
 export const REGIME_MULTIPLIERS = { boom: 0.5, normal: 1, recession: 2.5 };

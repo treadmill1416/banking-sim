@@ -1,6 +1,6 @@
 import { REGIME_LOAN_DEMAND, REGIME_ECB_BIAS, REGIME_DEFAULT_RISK, REGIME_DEPOSIT_MOD, REGIME_TRANSITIONS, REGIME_NAMES, ECB_RATE_NAMES, CB_SPREAD, RATE_MIN, RATE_MAX, PROB } from './constants.js';
 import { addEvent } from './state.js';
-import { checkReserves } from './mechanics.js';
+import { processLoanApproval } from './mechanics.js';
 import { fmtDollar } from './utils.js';
 
 export function tryDepositFlow(s) {
@@ -34,21 +34,16 @@ export function tryLoanRequest(s) {
   const baseAmount = 100000 + Math.random() * 1900000;
   const amount = baseAmount * demandMult * rateElasticity;
   const riskMult = REGIME_DEFAULT_RISK[s.regime];
-  const defaultProb = Math.min((2 + Math.random() * 6) * riskMult, 25);
+  const defaultProb = Math.min((0.5 + Math.random() * 12) * riskMult, 35);
   const id = 'lr-' + s.nextEventId;
   const entry = addEvent(s, 'loan_request', 'Loan request: ' + fmtDollar(amount), 'event-info', {
     loanAmount: amount,
     defaultProb,
-    loanRequestId: id
+    loanRequestId: id,
+    proposedRate: s.loanRate
   });
   if (s.autoAcceptThreshold > 0 && entry.defaultProb <= s.autoAcceptThreshold) {
-    s.loans += entry.loanAmount;
-    s.deposits += entry.loanAmount;
-    entry.approved = true;
-    entry.msg += ' — AUTO-APPROVED';
-    entry.cls = 'event-income';
-    addEvent(s, 'loan', 'Loan auto-approved: ' + fmtDollar(entry.loanAmount) + ' (risk ' + entry.defaultProb.toFixed(1) + '%)', 'event-income');
-    checkReserves(s);
+    processLoanApproval(s, entry, s.loanRate);
   }
 }
 

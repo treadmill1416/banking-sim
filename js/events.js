@@ -1,4 +1,4 @@
-import { REGIME_LOAN_DEMAND, REGIME_ECB_BIAS, REGIME_DEFAULT_RISK, REGIME_DEPOSIT_MOD, REGIME_TRANSITIONS, REGIME_NAMES, ECB_RATE_NAMES, CB_SPREAD, RATE_MIN, RATE_MAX, PROB } from './constants.js';
+import { REGIME_LOAN_DEMAND, REGIME_ECB_BIAS, REGIME_DEFAULT_RISK, REGIME_DEPOSIT_MOD, REGIME_TRANSITIONS, REGIME_NAMES, ECB_RATE_NAMES, CB_SPREAD, RATE_MIN, RATE_MAX, PROB, TICKS_PER_MONTH } from './constants.js';
 import { addEvent } from './state.js';
 import { processLoanApproval } from './mechanics.js';
 import { fmtDollar } from './utils.js';
@@ -28,7 +28,8 @@ export function tryDepositFlow(s) {
 }
 
 export function tryLoanRequest(s) {
-  if (Math.random() >= PROB.loanRequest) return;
+  const baseProb = (s.loanRequestsPerMonth || 40) / TICKS_PER_MONTH;
+  if (Math.random() >= baseProb) return;
   const demandMult = REGIME_LOAN_DEMAND[s.regime];
   const rateElasticity = Math.max(0.1, 1 - (s.loanRate - 5) * 0.08);
   const baseAmount = 100000 + Math.random() * 1900000;
@@ -40,7 +41,8 @@ export function tryLoanRequest(s) {
     loanAmount: amount,
     defaultProb,
     loanRequestId: id,
-    proposedRate: s.loanRate
+    proposedRate: s.loanRate,
+    durationMonths: 3 + Math.floor(Math.random() * 34)
   });
   if (s.autoAcceptThreshold > 0 && entry.defaultProb <= s.autoAcceptThreshold) {
     processLoanApproval(s, entry, s.loanRate);

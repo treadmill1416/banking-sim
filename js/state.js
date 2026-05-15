@@ -25,6 +25,18 @@ export function load() {
     const raw = localStorage.getItem(SAVE_KEY);
     if (raw) {
       _state = Object.assign(createInitialState(), JSON.parse(raw));
+      if (_state.loanRecords.length === 0 && _state.loans > 0) {
+        _state.loanRecords.push({
+          id: 'loan-0',
+          amount: _state.loans,
+          rate: _state.weightedLoanRate || _state.loanRate,
+          durationTicks: null,
+          defaultProb: 2,
+          status: 'active',
+          createdAt: 0,
+          repaidAtTick: null
+        });
+      }
       return true;
     }
   } catch (e) {}

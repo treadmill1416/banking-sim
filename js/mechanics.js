@@ -1,4 +1,4 @@
-import { TICKS_PER_YEAR, TICKS_PER_MONTH, RESERVE_RATIO_TARGET, NPL_WINDOW, DEFAULT_WINDOW, REGIME_MULTIPLIERS, DEFAULT_ANNUAL_RATE, PROB, LOAN_EXPIRY_TICKS, DEPO_STABILITY_PROB, DEPO_STABILITY_RATE } from './constants.js';
+import { TICKS_PER_YEAR, TICKS_PER_MONTH, RESERVE_RATIO_TARGET, NPL_WINDOW, DEFAULT_WINDOW, REGIME_MULTIPLIERS, DEFAULT_ANNUAL_RATE, PROB, LOAN_EXPIRY_TICKS, LOAN_DEFAULT_DURATION, DEPO_STABILITY_PROB, DEPO_STABILITY_RATE } from './constants.js';
 import { addEvent } from './state.js';
 import { fmtDollar } from './utils.js';
 
@@ -102,6 +102,18 @@ export function processLoanApproval(s, entry, rate) {
     addEvent(s, 'loan', 'Customer refused loan of ' + fmtDollar(entry.loanAmount) + ' at ' + rate.toFixed(2) + '%', 'event-expense');
     return;
   }
+  const months = entry.durationMonths || 12;
+  const lr = {
+    id: 'loan-' + (s.nextLoanRecordId++),
+    amount: entry.loanAmount,
+    rate: rate,
+    durationTicks: months * TICKS_PER_MONTH,
+    defaultProb: entry.defaultProb || 2,
+    status: 'active',
+    createdAt: s.tick,
+    repaidAtTick: null
+  };
+  s.loanRecords.push(lr);
   const oldLoans = s.loans;
   s.loans += entry.loanAmount;
   s.deposits += entry.loanAmount;
@@ -117,22 +129,67 @@ export function processLoanApproval(s, entry, rate) {
 }
 
 export function processDefaults(s) {
-  const annualRate = DEFAULT_ANNUAL_RATE * REGIME_MULTIPLIERS[s.regime];
-  const hourlyRate = annualRate / TICKS_PER_YEAR;
-  const defAmount = s.loans * hourlyRate;
-  if (defAmount > 1 && Math.random() < PROB.defaultHit) {
-    const actual = defAmount * (0.5 + Math.random());
-    s.loans = Math.max(0, s.loans - actual);
-    s.cumulativeDefaults += actual;
-    s.defaultTicks.push(s.tick);
-    s.defaultAmounts.push(actual);
-    while (s.defaultTicks.length > 0 && s.tick - s.defaultTicks[0] > DEFAULT_WINDOW) {
-      s.defaultTicks.shift();
-      s.defaultAmounts.shift();
+  for (const lr of s.loanRecords) {
+    if (lr.status !== 'active') continue;
+    const annualProb = (lr.defaultProb / 100) * REGIME_MULTIPLIERS[s.regime];
+    const tickProb = annualProb / TICKS_PER_YEAR;
+    if (tickProb > 0 && Math.random() < tickProb) {
+      const actual = lr.amount;
+      s.loans = Math.max(0, s.loans - actual);
+      s.cumulativeDefaults += actual;
+      s.defaultTicks.push(s.tick);
+      s.defaultAmounts.push(actual);
+      while (s.defaultTicks.length > 0 && s.tick - s.defaultTicks[0] > DEFAULT_WINDOW) {
+        s.defaultTicks.shift();
+        s.defaultAmounts.shift();
+      }
+      s.pnl.defaults += actual;
+      lr.status = 'defaulted';
+      lr.repaidAtTick = s.tick;
+      recomputeWeightedLoanRate(s);
+      addEvent(s, 'default', 'Loan defaulted: ' + fmtDollar(actual) + ' (' + lr.id + ')', 'event-expense');
     }
-    s.pnl.defaults += actual;
-    addEvent(s, 'default', 'Loan default: ' + fmtDollar(actual), 'event-expense');
   }
+}
+
+export function processLoanMaturities(s) {
+  let changed = false;
+  for (const lr of s.loanRecords) {
+    if (lr.status === 'active' && lr.durationTicks != null && s.tick - lr.createdAt >= lr.durationTicks) {
+      lr.status = 'repaid';
+      lr.repaidAtTick = s.tick;
+      s.loans = Math.max(0, s.loans - lr.amount);
+      s.deposits = Math.max(0, s.deposits - lr.amount);
+      changed = true;
+      addEvent(s, 'loan', 'Loan matured: ' + fmtDollar(lr.amount) + ' repaid (' + lr.id + ')', 'event-income');
+    }
+  }
+  if (changed) recomputeWeightedLoanRate(s);
+}
+
+export function computeDefaultRate(s) {
+  const cutoff = s.tick - TICKS_PER_YEAR;
+  let finished = 0;
+  let defaulted = 0;
+  for (const lr of s.loanRecords) {
+    if (lr.repaidAtTick != null && lr.repaidAtTick >= cutoff) {
+      finished++;
+      if (lr.status === 'defaulted') defaulted++;
+    }
+  }
+  return finished > 0 ? (defaulted / finished) * 100 : 0;
+}
+
+function recomputeWeightedLoanRate(s) {
+  let total = 0;
+  let weighted = 0;
+  for (const lr of s.loanRecords) {
+    if (lr.status === 'active') {
+      total += lr.amount;
+      weighted += lr.amount * lr.rate;
+    }
+  }
+  s.weightedLoanRate = total > 0 ? weighted / total : s.loanRate;
 }
 
 export function checkReserves(s) {

@@ -75,6 +75,8 @@ input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;bac
 .event-warn{color:#d29922}
 .pnl-card{margin-bottom:12px}
 .pnl-progress{font-size:10px;color:#8b949e;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.3px}
+.pnl-progress-prev{color:#58a6ff;margin-top:0}
+.pnl-spacer{height:12px;border-top:2px solid #30363d;margin:8px 0}
 .pnl-rows{display:flex;flex-direction:column;gap:2px}
 .pnl-row{display:flex;justify-content:space-between;padding:2px 0;font-size:13px;font-variant-numeric:tabular-nums}
 .pnl-label{color:#8b949e}
@@ -94,21 +96,45 @@ input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;bac
 .chart-grid{stroke:#21262d;stroke-width:1}
 .chart-line{fill:none;stroke-width:1.5}
 .events-empty{padding:12px 0;text-align:center;color:#8b949e;font-size:13px}
-.loan-apps{margin-bottom:12px}
+.loan-apps{margin-bottom:0}
 .loan-apps .aa-row{margin-bottom:10px}
-.loan-apps-list{max-height:200px;overflow-y:auto}
-.loan-apps-list::-webkit-scrollbar{width:6px}
-.loan-apps-list::-webkit-scrollbar-track{background:#0d1117}
-.loan-apps-list::-webkit-scrollbar-thumb{background:#30363d;border-radius:3px}
-.la-entry{display:flex;align-items:center;gap:6px;padding:5px 8px;border:1px solid #21262d;border-radius:4px;margin-bottom:4px;background:#0d1117;font-size:12px}
-.la-id{font-size:10px;color:#8b949e;font-weight:600;font-family:'SF Mono','Cascadia Code','Consolas',monospace;min-width:36px}
-.la-amount{font-size:12px;font-weight:600;font-family:'SF Mono','Cascadia Code','Consolas',monospace;color:#f0f6fc;min-width:50px}
-.la-interest{font-size:11px;font-weight:600;color:#3fb950;font-family:'SF Mono','Cascadia Code','Consolas',monospace;min-width:55px;white-space:nowrap}
-.la-prob{font-size:10px;color:#8b949e;min-width:36px;white-space:nowrap}
-.la-btns{display:flex;gap:4px;flex-shrink:0;align-items:center}
-.rate-input{width:50px;background:#0d1117;border:1px solid #30363d;border-radius:3px;padding:2px 4px;color:#c9d1d9;font-size:11px;font-family:'SF Mono','Cascadia Code','Consolas',monospace;text-align:center;flex-shrink:0}
-.rate-input:focus{outline:none;border-color:#58a6ff}
+.loan-apps .loan-apps-list{max-height:340px;overflow-y:auto}
+.loan-apps .loan-apps-list::-webkit-scrollbar{width:6px}
+.loan-apps .loan-apps-list::-webkit-scrollbar-track{background:#0d1117}
+.loan-apps .loan-apps-list::-webkit-scrollbar-thumb{background:#30363d;border-radius:3px}
+.la-entry{display:flex;flex-direction:column;gap:6px;padding:10px;border:1px solid #21262d;border-radius:6px;margin-bottom:6px;background:#0d1117}
+.la-top{display:flex;justify-content:space-between;align-items:center}
+.la-id{font-size:11px;color:#8b949e;font-weight:600;font-family:'SF Mono','Cascadia Code','Consolas',monospace}
+.la-amount{font-size:15px;font-weight:700;font-family:'SF Mono','Cascadia Code','Consolas',monospace;color:#f0f6fc}
+.la-rate-row{display:flex;align-items:center;gap:8px}
+.la-rate-label{font-size:11px;color:#8b949e;white-space:nowrap}
+.la-rate-row input[type=range]{flex:1}
+.rate-slider-val{font-size:12px;font-weight:600;font-family:'SF Mono','Cascadia Code','Consolas',monospace;color:#58a6ff;min-width:48px;text-align:right}
+.la-dur-row{display:flex;align-items:center;gap:8px;margin-top:2px;font-size:12px}
+.dur-display{font-weight:600;color:#d29922;font-family:'SF Mono','Cascadia Code','Consolas',monospace}
+.la-maturity{font-size:11px;color:#8b949e;margin-left:auto}
+.la-stats{display:flex;justify-content:space-between;align-items:center;padding:2px 0}
+.la-interest{font-size:13px;font-weight:600;color:#3fb950;font-family:'SF Mono','Cascadia Code','Consolas',monospace}
+.la-prob{font-size:12px;color:#d29922}
+.la-actions{display:flex;justify-content:flex-end;gap:6px;padding-top:4px;border-top:1px solid #21262d}
 .config-pane{margin-bottom:12px}
+.accepted-loans .al-entry{padding:6px 8px;border:1px solid #21262d;border-radius:4px;margin-bottom:4px;background:#0d1117;font-size:12px}
+.accepted-loans .al-entry.al-status-defaulted{border-color:#da363344}
+.accepted-loans .al-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px}
+.accepted-loans .al-id{font-family:'SF Mono','Cascadia Code','Consolas',monospace;color:#8b949e;font-size:11px}
+.accepted-loans .al-amount{font-family:'SF Mono','Cascadia Code','Consolas',monospace;font-weight:600;font-size:13px;color:#f0f6fc}
+.accepted-loans .al-mid{display:flex;gap:8px;align-items:center}
+.accepted-loans .al-rate{font-family:'SF Mono','Cascadia Code','Consolas',monospace;color:#58a6ff;font-weight:600;font-size:12px}
+.accepted-loans .al-status{font-size:10px;font-weight:600;padding:1px 5px;border-radius:3px}
+.accepted-loans .al-status-active{background:#0f3d1e;color:#3fb950;border:1px solid #238636}
+.accepted-loans .al-status-repaid{background:#0d2b45;color:#58a6ff;border:1px solid #1f6feb}
+.accepted-loans .al-status-defaulted{background:#3d0f0f;color:#f85149;border:1px solid #da3633}
+.accepted-loans .al-dur{font-size:11px;color:#d29922;font-weight:600;font-family:'SF Mono','Cascadia Code','Consolas',monospace}
+.accepted-loans .al-remain{font-size:11px;color:#8b949e;margin-left:auto}
+.accepted-loans #acceptedLoansBody{max-height:340px;overflow-y:auto}
+.accepted-loans #acceptedLoansBody::-webkit-scrollbar{width:6px}
+.accepted-loans #acceptedLoansBody::-webkit-scrollbar-track{background:#0d1117}
+.accepted-loans #acceptedLoansBody::-webkit-scrollbar-thumb{background:#30363d;border-radius:3px}
 .cfg-row{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:#c9d1d9;padding:4px 0}
 .cfg-row input[type=checkbox]{width:16px;height:16px;accent-color:#58a6ff;cursor:pointer}
 

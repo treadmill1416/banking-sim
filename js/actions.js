@@ -7,8 +7,8 @@ export function approveLoan(id) {
   const s = getState();
   const entry = s.eventLog.find(e => e.loanRequestId === id && e.type === 'loan_request');
   if (!entry || entry.approved !== undefined) return;
-  const rateInput = document.querySelector(`.rate-input[data-id="${id}"]`);
-  const rate = rateInput ? parseFloat(rateInput.value) || s.loanRate : s.loanRate;
+  const rateSlider = document.querySelector(`.app-rate-slider[data-id="${id}"]`);
+  const rate = rateSlider ? parseFloat(rateSlider.value) || s.loanRate : s.loanRate;
   processLoanApproval(s, entry, rate);
 }
 

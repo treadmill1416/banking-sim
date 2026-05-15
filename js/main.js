@@ -1,9 +1,9 @@
 import { getState, setState, createInitialState, load, save, reset as resetState } from './state.js';
-import { accrueInterest, processDefaults, checkReserves, expireOldLoans, reserveRatio, computeNim, equity, updatePnl, tryDepositStability } from './mechanics.js';
+import { accrueInterest, processDefaults, checkReserves, expireOldLoans, reserveRatio, computeNim, equity, updatePnl, tryDepositStability, processLoanMaturities, computeDefaultRate } from './mechanics.js';
 import { tryDepositFlow, tryLoanRequest, tryEcbChange, tryRegimeChange } from './events.js';
 import { approveLoan, rejectLoan, cbBorrow, cbRepay } from './actions.js';
 import { fmtDollar } from './utils.js';
-import { updateUI, updateEventLog, updateLoanApps, updatePnlDisplay } from './ui.js';
+import { updateUI, updateEventLog, updateLoanApps, updatePnlDisplay, updateAcceptedLoans } from './ui.js';
 import { updateCharts } from './charts.js';
 import { HISTORY_MAX } from './constants.js';
 import { initAdmin } from './admin.js';
@@ -17,6 +17,7 @@ function tick() {
   accrueInterest(s);
   updatePnl(s);
   processDefaults(s);
+  processLoanMaturities(s);
   tryDepositFlow(s);
   tryDepositStability(s);
   tryLoanRequest(s);
@@ -24,6 +25,9 @@ function tick() {
   tryRegimeChange(s);
   expireOldLoans(s);
   checkReserves(s);
+
+  s.defaultRateHistory.push(computeDefaultRate(s));
+  if (s.defaultRateHistory.length > HISTORY_MAX) s.defaultRateHistory.shift();
 
   s.historyRR.push(reserveRatio(s));
   s.historyNIM.push(computeNim(s));
@@ -35,6 +39,7 @@ function tick() {
   updateCharts();
   updateEventLog();
   updateLoanApps();
+  updateAcceptedLoans();
   save();
 }
 
@@ -68,6 +73,18 @@ export function applyAdminConfig(overrides) {
   s.defaultTicks = [];
   s.defaultAmounts = [];
   s.pendingLoans = {};
+  s.loanRecords = s.loans > 0 ? [{
+    id: 'loan-0',
+    amount: s.loans,
+    rate: s.loanRate,
+    durationTicks: null,
+    defaultProb: 2,
+    status: 'active',
+    createdAt: 0,
+    repaidAtTick: null
+  }] : [];
+  s.nextLoanRecordId = 1;
+  s.defaultRateHistory = [];
   document.getElementById('loanRateSlider').value = s.loanRate;
   document.getElementById('depositRateSlider').value = s.depositRate;
   document.getElementById('autoAcceptSlider').value = s.autoAcceptThreshold;
@@ -97,6 +114,18 @@ function resetGame() {
   if (intervalId) { clearInterval(intervalId); intervalId = null; }
   resetState();
   const s = getState();
+  if (s.loans > 0) {
+    s.loanRecords.push({
+      id: 'loan-0',
+      amount: s.loans,
+      rate: s.loanRate,
+      durationTicks: null,
+      defaultProb: 2,
+      status: 'active',
+      createdAt: 0,
+      repaidAtTick: null
+    });
+  }
   s.historyRR.push(reserveRatio(s));
   s.historyNIM.push(computeNim(s));
   s.historyEQ.push(equity(s));
@@ -131,6 +160,7 @@ export function updateAll() {
   updateCharts();
   updateEventLog();
   updateLoanApps();
+  updateAcceptedLoans();
   save();
 }
 
@@ -140,14 +170,15 @@ function bindEvents() {
   document.getElementById('resetBtn').addEventListener('click', resetGame);
   document.getElementById('loanAppsList').addEventListener('click', onLoanAppsClick);
   document.getElementById('loanAppsList').addEventListener('input', function (e) {
-    const input = e.target.closest('.rate-input');
-    if (!input) return;
-    const entry = input.closest('.la-entry');
+    const slider = e.target.closest('.app-rate-slider');
+    if (!slider) return;
+    const entry = slider.closest('.la-entry');
     const amount = parseFloat(entry.dataset.amount);
-    const rate = parseFloat(input.value);
+    const rate = parseFloat(slider.value);
     if (amount && rate) {
       const interest = amount * rate / 100;
-      entry.querySelector('.la-interest').textContent = '+' + fmtDollar(interest).replace(/^\$/, '');
+      entry.querySelector('.la-interest').textContent = 'Annual interest: +' + fmtDollar(interest).replace(/^\$/, '');
+      entry.querySelector('.rate-slider-val').textContent = rate.toFixed(2) + '%';
     }
   });
   document.getElementById('cbBorrowBtn').addEventListener('click', onCdBorrowClick);
@@ -182,6 +213,18 @@ function init() {
     setState(createInitialState());
   }
   const s = getState();
+  if (s.loanRecords.length === 0 && s.loans > 0) {
+    s.loanRecords.push({
+      id: 'loan-0',
+      amount: s.loans,
+      rate: s.weightedLoanRate || s.loanRate,
+      durationTicks: null,
+      defaultProb: 2,
+      status: 'active',
+      createdAt: 0,
+      repaidAtTick: null
+    });
+  }
   if (s.historyRR.length === 0) {
     s.historyRR.push(reserveRatio(s));
     s.historyNIM.push(computeNim(s));

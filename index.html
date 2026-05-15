@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bank Runner</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;background:#0d1117;color:#c9d1d9;min-height:100vh;overflow-x:hidden}
+.app{max-width:1100px;margin:0 auto;padding:12px 16px}
+.header{display:flex;align-items:center;justify-content:space-between;padding:8px 0 10px;border-bottom:1px solid #30363d;margin-bottom:12px;flex-wrap:wrap;gap:6px}
+.header h1{font-size:20px;font-weight:700;color:#f0f6fc;letter-spacing:-0.3px}
+.header-controls{display:flex;align-items:center;gap:8px}
+.quarter{font-size:13px;color:#8b949e;background:#161b22;padding:2px 10px;border-radius:4px;border:1px solid #30363d}
+.regime-badge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:3px;text-transform:uppercase}
+.regime-boom{background:#0f3d1e;color:#3fb950;border:1px solid #238636}
+.regime-normal{background:#0d2b45;color:#58a6ff;border:1px solid #1f6feb}
+.regime-recession{background:#3d0f0f;color:#f85149;border:1px solid #da3633}
+.speed-btn,.pause-btn{padding:3px 10px;font-size:12px;border:1px solid #30363d;border-radius:4px;background:#161b22;color:#c9d1d9;cursor:pointer;font-family:inherit;transition:all .15s}
+.speed-btn:hover,.pause-btn:hover{background:#21262d;border-color:#8b949e}
+.speed-btn.active{background:#1f6feb;border-color:#1f6feb;color:#fff}
+.pause-btn{padding:3px 12px;font-size:14px;width:36px;text-align:center}
+.grid-main{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+@media(max-width:700px){.grid-main{grid-template-columns:1fr}}
+.card{background:#161b22;border:1px solid #30363d;border-radius:6px;padding:12px}
+.card h2{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:#8b949e;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #21262d}
+.balance-sheet{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.bs-section{padding:0 4px}
+.bs-header{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px}
+.bs-assets .bs-header{color:#58a6ff}
+.bs-liabilities .bs-header{color:#d2a8ff}
+.bs-row{display:flex;justify-content:space-between;padding:3px 0;font-size:13px;font-variant-numeric:tabular-nums}
+.bs-row.total{border-top:1px solid #30363d;margin-top:4px;padding-top:5px;font-weight:600;color:#f0f6fc}
+.bs-row .label{color:#8b949e}
+.bs-row .value{font-family:'SF Mono','Cascadia Code','Consolas',monospace}
+.metrics-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px}
+.metric{padding:2px 0}
+.metric-label{font-size:11px;color:#8b949e;text-transform:uppercase;letter-spacing:0.3px}
+.metric-value{font-size:16px;font-weight:600;font-family:'SF Mono','Cascadia Code','Consolas',monospace}
+.metric-micro{grid-column:1/-1;margin-top:6px}
+.ecb-rates{display:flex;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid #21262d;flex-wrap:wrap}
+.ecb-rate{padding:4px 8px;border-radius:4px;font-size:12px;font-weight:600;font-family:'SF Mono','Cascadia Code','Consolas',monospace}
+.ecb-mlf{background:#3d0f0f;color:#f85149;border:1px solid #da3633}
+.ecb-mro{background:#0d2b45;color:#58a6ff;border:1px solid #1f6feb}
+.ecb-depo{background:#0f3d1e;color:#3fb950;border:1px solid #238636}
+.slider-group{margin:8px 0}
+.slider-group:first-child{margin-top:0}
+.slider-label{display:flex;justify-content:space-between;font-size:12px;margin-bottom:2px}
+.slider-label .rate-val{font-family:'SF Mono','Cascadia Code','Consolas',monospace;font-weight:600}
+.rate-currency{font-size:11px;color:#8b949e;margin-top:1px}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:4px;background:#30363d;border-radius:2px;outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;background:#58a6ff;border:2px solid #fff;cursor:pointer;transition:all .1s}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.15)}
+input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#58a6ff;border:2px solid #fff;cursor:pointer}
+.cb-desk{margin-top:10px;padding-top:10px;border-top:1px solid #21262d}
+.cb-desk h3{font-size:11px;color:#8b949e;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px}
+.cb-row{display:flex;gap:6px;align-items:center;margin-top:4px}
+.cb-row input{flex:1;background:#0d1117;border:1px solid #30363d;border-radius:4px;padding:4px 8px;color:#c9d1d9;font-size:12px;font-family:'SF Mono','Cascadia Code','Consolas',monospace;min-width:0}
+.cb-row input:focus{outline:none;border-color:#58a6ff}
+.cb-btn{padding:4px 10px;font-size:11px;font-weight:600;border:1px solid;border-radius:4px;cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap}
+.cb-btn.borrow{background:#1f6feb10;color:#58a6ff;border-color:#1f6feb}
+.cb-btn.borrow:hover{background:#1f6feb30}
+.cb-btn.repay{background:#3fb95010;color:#3fb950;border-color:#238636}
+.cb-btn.repay:hover{background:#3fb95030}
+.event-log{background:#161b22;border:1px solid #30363d;border-radius:6px;padding:8px 12px;margin-bottom:12px;max-height:240px;overflow-y:auto}
+.event-log::-webkit-scrollbar{width:6px}
+.event-log::-webkit-scrollbar-track{background:#0d1117}
+.event-log::-webkit-scrollbar-thumb{background:#30363d;border-radius:3px}
+.event-entry{padding:4px 0;font-size:13px;display:flex;align-items:flex-start;gap:6px;border-bottom:1px solid #21262d;line-height:1.5}
+.event-entry:last-child{border-bottom:none}
+.event-tick{font-size:10px;color:#8b949e;font-weight:600;white-space:nowrap;min-width:48px;font-family:'SF Mono','Cascadia Code','Consolas',monospace}
+.event-msg{flex:1}
+.event-prob{font-size:11px;color:#8b949e;margin-left:4px}
+.event-btns{display:inline-flex;gap:4px;margin-left:6px}
+.event-btn{padding:1px 8px;font-size:11px;font-weight:600;border:1px solid;border-radius:3px;cursor:pointer;font-family:inherit;transition:all .12s}
+.event-btn.approve{background:#3fb95010;color:#3fb950;border-color:#238636}
+.event-btn.approve:hover{background:#3fb95030}
+.event-btn.reject{background:#f8514910;color:#f85149;border-color:#da3633}
+.event-btn.reject:hover{background:#f8514930}
+.event-income{color:#3fb950}
+.event-expense{color:#f85149}
+.event-info{color:#58a6ff}
+.event-warn{color:#d29922}
+.charts-section{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+@media(max-width:700px){.charts-section{grid-template-columns:1fr}}
+.chart-card{background:#161b22;border:1px solid #30363d;border-radius:6px;padding:8px}
+.chart-card svg{width:100%;height:120px;display:block}
+.chart-label{font-size:10px;fill:#8b949e;font-family:'SF Mono','Cascadia Code','Consolas',monospace}
+.chart-value{font-size:14px;font-weight:600;font-family:'SF Mono','Cascadia Code','Consolas',monospace}
+.chart-title{font-size:10px;fill:#8b949e;text-transform:uppercase;letter-spacing:0.3px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif}
+.chart-grid{stroke:#21262d;stroke-width:1}
+.chart-line{fill:none;stroke-width:1.5}
+.events-empty{padding:12px 0;text-align:center;color:#8b949e;font-size:13px}
+.loan-apps{margin-bottom:12px}
+.loan-apps .aa-row{margin-bottom:10px}
+.loan-apps-list{max-height:200px;overflow-y:auto}
+.loan-apps-list::-webkit-scrollbar{width:6px}
+.loan-apps-list::-webkit-scrollbar-track{background:#0d1117}
+.loan-apps-list::-webkit-scrollbar-thumb{background:#30363d;border-radius:3px}
+.la-entry{display:flex;align-items:center;justify-content:space-between;padding:6px 8px;border:1px solid #21262d;border-radius:4px;margin-bottom:4px;background:#0d1117}
+.la-info{display:flex;flex-direction:column;gap:1px}
+.la-amount{font-size:14px;font-weight:600;font-family:'SF Mono','Cascadia Code','Consolas',monospace;color:#f0f6fc}
+.la-prob{font-size:11px;color:#8b949e}
+.la-btns{display:flex;gap:4px;flex-shrink:0}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="header">
+  <div style="display:flex;align-items:center;gap:10px">
+    <h1>Bank Runner</h1>
+    <span class="quarter" id="gameDate">Jan 1, 2026 00:00</span>
+    <span class="quarter" id="quarter">Q1 2026</span>
+    <span class="regime-badge" id="regimeBadge">NORMAL</span>
+  </div>
+  <div class="header-controls">
+    <button class="speed-btn" data-speed="1">1×</button>
+    <button class="speed-btn" data-speed="3">3×</button>
+    <button class="speed-btn" data-speed="10">10×</button>
+    <button class="pause-btn" id="pauseBtn">⏸</button>
+    <button class="speed-btn" id="resetBtn" title="Reset game" style="font-size:13px">↺</button>
+  </div>
+</div>
+
+<div class="grid-main">
+  <div class="card">
+    <h2>Balance Sheet</h2>
+    <div class="balance-sheet">
+      <div class="bs-section bs-assets">
+        <div class="bs-header">Assets</div>
+        <div class="bs-row"><span class="label">Reserves</span><span class="value" id="bsReserves">—</span></div>
+        <div class="bs-row"><span class="label">Loans</span><span class="value" id="bsLoans">—</span></div>
+        <div class="bs-row"><span class="label">Bonds</span><span class="value" id="bsBonds">—</span></div>
+        <div class="bs-row total"><span class="label">Total</span><span class="value" id="bsAssetsTotal">—</span></div>
+      </div>
+      <div class="bs-section bs-liabilities">
+        <div class="bs-header">Liabilities</div>
+        <div class="bs-row"><span class="label">Deposits</span><span class="value" id="bsDeposits">—</span></div>
+        <div class="bs-row"><span class="label">CB Borrowing</span><span class="value" id="bsCbBorrowing">—</span></div>
+        <div class="bs-row"><span class="label">Equity</span><span class="value" id="bsEquity" style="color:#3fb950">—</span></div>
+        <div class="bs-row total"><span class="label">Total</span><span class="value" id="bsLiabilitiesTotal">—</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Metrics &amp; Rates</h2>
+    <div class="metrics-grid">
+      <div class="metric">
+        <div class="metric-label">Reserve Ratio</div>
+        <div class="metric-value" id="metricReserveRatio">—</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Equity</div>
+        <div class="metric-value" id="metricEquity">—</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">NIM</div>
+        <div class="metric-value" id="metricNim">—</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">NPL Ratio</div>
+        <div class="metric-value" id="metricNpl">—</div>
+      </div>
+    </div>
+    <div class="slider-group">
+      <div class="slider-label"><span>Loan Rate</span><span class="rate-val" id="loanRateDisplay">5.50%</span></div>
+      <input type="range" id="loanRateSlider" min="0.5" max="20" step="0.25" value="5.5">
+    </div>
+    <div class="slider-group">
+      <div class="slider-label"><span>Deposit Rate</span><span class="rate-val" id="depositRateDisplay">1.50%</span></div>
+      <input type="range" id="depositRateSlider" min="0" max="10" step="0.25" value="1.5">
+    </div>
+    <div class="ecb-rates">
+      <span class="ecb-rate ecb-mlf" id="ecbMlf">MLF —%</span>
+      <span class="ecb-rate ecb-mro" id="ecbMro">MRO —%</span>
+      <span class="ecb-rate ecb-depo" id="ecbDepo">Depo —%</span>
+    </div>
+    <div class="cb-desk">
+      <h3>Central Bank Desk</h3>
+      <div class="cb-row">
+        <input type="number" id="cbAmount" value="100000" step="10000" min="0">
+        <button class="cb-btn borrow" id="cbBorrowBtn">Borrow</button>
+        <button class="cb-btn repay" id="cbRepayBtn">Repay</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card loan-apps">
+  <h2>Loan Applications</h2>
+  <div class="aa-row">
+    <div class="slider-label">
+      <span>Auto-accept threshold</span>
+      <span class="rate-val" id="autoAcceptDisplay">0.00%</span>
+    </div>
+    <input type="range" id="autoAcceptSlider" min="0" max="25" step="0.5" value="0">
+  </div>
+  <div class="loan-apps-list" id="loanAppsList">
+    <div class="events-empty">No pending loan applications.</div>
+  </div>
+</div>
+
+<div class="event-log" id="eventLog">
+  <div class="events-empty">Waiting for events…</div>
+</div>
+
+<div class="charts-section">
+  <div class="chart-card"><svg id="chartReserves"></svg></div>
+  <div class="chart-card"><svg id="chartNim"></svg></div>
+  <div class="chart-card"><svg id="chartEquity"></svg></div>
+</div>
+</div>
+
+<script>
+const SAVE_KEY = 'bankrunner-state';
+const TICKS_PER_QUARTER = 2190;
+const TICKS_PER_YEAR = 8760;
+
+function fmtDollar(n) {
+  if (n === undefined || n === null || isNaN(n)) return '—';
+  if (Math.abs(n) < 0.5) return '$0';
+  const sign = n < 0 ? '-$' : '$';
+  const abs = Math.abs(n);
+  let s;
+  if (abs >= 1e9) s = (abs / 1e9).toFixed(2) + 'B';
+  else if (abs >= 1e6) s = (abs / 1e6).toFixed(2) + 'M';
+  else if (abs >= 1e3) s = (abs / 1e3).toFixed(1) + 'K';
+  else s = abs.toFixed(0);
+  return sign + s.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+function fmtPct(n) {
+  if (n === undefined || n === null || isNaN(n)) return '—';
+  return n.toFixed(2) + '%';
+}
+
+function createInitialState() {
+  return {
+    tick: 0,
+    speed: 10,
+    paused: false,
+    reserves: 100000,
+    loans: 8000000,
+    bonds: 2000000,
+    deposits: 10000000,
+    cbBorrowing: 0,
+    loanRate: 5.50,
+    depositRate: 1.50,
+    ecbDepositRate: 3.75,
+    ecbMroRate: 4.00,
+    ecbMlfRate: 4.25,
+    regime: 'normal',
+    eventLog: [],
+    nextEventId: 1,
+    historyRR: [], historyNIM: [], historyEQ: [],
+    pendingLoans: {},
+    cumulativeDefaults: 0,
+    defaultTicks: [],
+    defaultAmounts: [],
+    autoAcceptThreshold: 0
+  };
+}
+
+let state = createInitialState();
+
+function requiredReserves(s) { return s.deposits * 0.01; }
+function equity(s) { return s.reserves + s.loans + s.bonds - s.deposits - s.cbBorrowing; }
+function totalAssets(s) { return s.reserves + s.loans + s.bonds; }
+function reserveRatio(s) { return s.deposits > 0 ? (s.reserves / s.deposits) * 100 : 100; }
+
+function computeNim(s) {
+  const ea = s.loans + s.bonds + s.reserves;
+  if (ea < 1) return 0;
+  const annualLoan = s.loans * (s.loanRate / 100);
+  const annualDepo = s.deposits * (s.depositRate / 100);
+  const annualRes = s.reserves * (s.ecbDepositRate / 100);
+  const annualCb = s.cbBorrowing * (s.ecbMlfRate / 100);
+  const net = annualLoan + annualRes - annualDepo - annualCb;
+  return (net / ea) * 100;
+}
+
+function trailingNpl(s) {
+  const window = 720;
+  let total = 0;
+  for (let i = s.defaultTicks.length - 1; i >= 0; i--) {
+    if (s.tick - s.defaultTicks[i] <= window) total += s.defaultAmounts[i];
+    else break;
+  }
+  return s.loans > 0 ? (total / s.loans) * 100 : 0;
+}
+
+function quarterStr(tick) {
+  const q = Math.floor(tick / TICKS_PER_QUARTER) % 4 + 1;
+  const y = 2026 + Math.floor(tick / TICKS_PER_YEAR);
+  return 'Q' + q + ' ' + y;
+}
+
+function gameDateStr(tick) {
+  const start = new Date(2026, 0, 1);
+  const d = new Date(start.getTime() + tick * 3600000);
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear() + ' ' + String(d.getHours()).padStart(2,'0') + ':00';
+}
+
+function save() {
+  try {
+    const data = JSON.stringify(state);
+    localStorage.setItem(SAVE_KEY, data);
+  } catch (e) {}
+}
+
+function load() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (raw) {
+      const loaded = JSON.parse(raw);
+      state = Object.assign(createInitialState(), loaded);
+      return true;
+    }
+  } catch (e) {}
+  return false;
+}
+
+function resetGame() {
+  if (confirm('Reset game? All progress will be lost.')) {
+    state = createInitialState();
+    localStorage.removeItem(SAVE_KEY);
+    state.historyRR.push(reserveRatio(state));
+    state.historyNIM.push(computeNim(state));
+    state.historyEQ.push(equity(state));
+    updateUI();
+    updateCharts();
+    updateEventLog();
+    updateLoanApps();
+  }
+}
+
+function addEvent(s, type, msg, cls, extra) {
+  const entry = {
+    id: s.nextEventId++,
+    tick: s.tick,
+    quarter: quarterStr(s.tick),
+    type: type,
+    msg: msg,
+    cls: cls || 'event-info'
+  };
+  if (extra) Object.assign(entry, extra);
+  s.eventLog.unshift(entry);
+  if (s.eventLog.length > 200) s.eventLog.pop();
+  return entry;
+}
+
+function accrueInterest(s) {
+  const hourly = 1 / TICKS_PER_YEAR;
+  const loanInt = s.loans * (s.loanRate / 100) * hourly;
+  const depoInt = s.deposits * (s.depositRate / 100) * hourly;
+  const resInt = s.reserves * (s.ecbDepositRate / 100) * hourly;
+  const cbInt = s.cbBorrowing * (s.ecbMlfRate / 100) * hourly;
+  const net = loanInt + resInt - depoInt - cbInt;
+  s.reserves += net;
+  return net;
+}
+
+function processDefaults(s) {
+  const regimeMultipliers = { boom: 0.5, normal: 1, recession: 2.5 };
+  const annualRate = 0.04 * regimeMultipliers[s.regime];
+  const hourlyRate = annualRate / TICKS_PER_YEAR;
+  const defAmount = s.loans * hourlyRate;
+  if (defAmount > 1 && Math.random() < 0.15) {
+    const actual = defAmount * (0.5 + Math.random());
+    s.loans = Math.max(0, s.loans - actual);
+    s.cumulativeDefaults += actual;
+    s.defaultTicks.push(s.tick);
+    s.defaultAmounts.push(actual);
+    while (s.defaultTicks.length > 0 && s.tick - s.defaultTicks[0] > 7200) {
+      s.defaultTicks.shift();
+      s.defaultAmounts.shift();
+    }
+    addEvent(s, 'default', 'Loan default: ' + fmtDollar(actual), 'event-expense');
+  }
+}
+
+function depositFlow(s) {
+  const base = 50000 + Math.random() * 450000;
+  const marketRate = s.ecbMroRate;
+  const rateDiff = s.depositRate - marketRate;
+  const flowModifier = rateDiff * 200000;
+  const regimeMod = { boom: 1.5, normal: 1, recession: 0.4 }[s.regime];
+  const amount = (base + flowModifier) * regimeMod;
+  if (amount > 0) {
+    const inflow = amount * (0.5 + Math.random() * 0.5);
+    s.reserves += inflow;
+    s.deposits += inflow;
+    addEvent(s, 'deposit', 'Deposit inflow +' + fmtDollar(inflow), 'event-income');
+  } else {
+    const outflow = -amount * (0.3 + Math.random() * 0.4);
+    const actual = Math.min(outflow, s.deposits * 0.02);
+    if (actual > 1000) {
+      s.reserves = Math.max(0, s.reserves - actual);
+      s.deposits = Math.max(0, s.deposits - actual);
+      addEvent(s, 'deposit', 'Deposit outflow ' + fmtDollar(-actual), 'event-expense');
+    }
+  }
+}
+
+function loanRequestEvent(s) {
+  const regimeMultiplier = { boom: 1.8, normal: 1.0, recession: 0.4 };
+  const rateElasticity = Math.max(0.1, 1 - (s.loanRate - 5) * 0.08);
+  const baseAmount = 100000 + Math.random() * 1900000;
+  const amount = baseAmount * regimeMultiplier[s.regime] * rateElasticity;
+  const defaultProb = Math.min((2 + Math.random() * 6) * { boom: 0.4, normal: 1, recession: 2.5 }[s.regime], 25);
+  const id = 'lr-' + s.nextEventId;
+  const entry = addEvent(s, 'loan_request', 'Loan request: ' + fmtDollar(amount), 'event-info', {
+    loanAmount: amount,
+    defaultProb: defaultProb,
+    loanRequestId: id
+  });
+  if (s.autoAcceptThreshold > 0 && entry.defaultProb <= s.autoAcceptThreshold) {
+    s.loans += entry.loanAmount;
+    s.deposits += entry.loanAmount;
+    entry.approved = true;
+    entry.msg += ' — AUTO-APPROVED';
+    entry.cls = 'event-income';
+    addEvent(s, 'loan', 'Loan auto-approved: ' + fmtDollar(entry.loanAmount) + ' (risk ' + entry.defaultProb.toFixed(1) + '%)', 'event-income');
+    checkReserves(s);
+  }
+}
+
+function ecbRateChange(s) {
+  const direction = Math.random() < 0.5 ? 1 : -1;
+  const regimeBias = { boom: 0.6, normal: 0.5, recession: 0.3 }[s.regime];
+  const actualDir = Math.random() < regimeBias ? 1 : -1;
+  const bp = 0.25;
+  const rateIdx = Math.floor(Math.random() * 3);
+  let rateName, newVal;
+  if (rateIdx === 0) {
+    newVal = Math.max(0, Math.min(s.ecbDepositRate + actualDir * bp, 10));
+    rateName = 'Deposit facility';
+    s.ecbDepositRate = newVal;
+    if (s.ecbMroRate < newVal + 0.25) s.ecbMroRate = newVal + 0.25;
+    if (s.ecbMlfRate < s.ecbMroRate + 0.25) s.ecbMlfRate = s.ecbMroRate + 0.25;
+  } else if (rateIdx === 1) {
+    newVal = Math.max(0, Math.min(s.ecbMroRate + actualDir * bp, 10));
+    rateName = 'MRO';
+    s.ecbMroRate = newVal;
+    if (s.ecbMlfRate < newVal + 0.25) s.ecbMlfRate = newVal + 0.25;
+    if (s.ecbDepositRate > newVal - 0.25) s.ecbDepositRate = newVal - 0.25;
+  } else {
+    newVal = Math.max(0, Math.min(s.ecbMlfRate + actualDir * bp, 10));
+    rateName = 'Marginal lending facility';
+    s.ecbMlfRate = newVal;
+    if (s.ecbMroRate > newVal - 0.25) s.ecbMroRate = newVal - 0.25;
+    if (s.ecbDepositRate > s.ecbMroRate - 0.25) s.ecbDepositRate = s.ecbMroRate - 0.25;
+  }
+  const dirText = actualDir > 0 ? 'raises' : 'lowers';
+  addEvent(s, 'ecb', 'ECB ' + dirText + ' ' + rateName + ' to ' + newVal.toFixed(2) + '%', 'event-warn');
+}
+
+function regimeChange(s) {
+  const regimes = ['boom', 'normal', 'recession'];
+  const probs = { boom: [0.1, 0.8, 0.1], normal: [0.05, 0.9, 0.05], recession: [0.1, 0.8, 0.1] };
+  const r = Math.random();
+  let cumulative = 0;
+  let newRegime = s.regime;
+  for (let i = 0; i < 3; i++) {
+    cumulative += probs[s.regime][i];
+    if (r < cumulative) { newRegime = regimes[i]; break; }
+  }
+  if (newRegime !== s.regime) {
+    s.regime = newRegime;
+    addEvent(s, 'regime', 'Economy enters ' + newRegime + ' regime', 'event-warn');
+  }
+}
+
+function checkReserves(s) {
+  const req = requiredReserves(s);
+  if (s.reserves < req) {
+    const deficit = req - s.reserves;
+    s.cbBorrowing += deficit;
+    s.reserves += deficit;
+    addEvent(s, 'cb', 'Auto-borrowed ' + fmtDollar(deficit) + ' from CB (reserve shortfall)', 'event-expense');
+  }
+}
+
+function tick() {
+  const s = state;
+  s.tick++;
+
+  accrueInterest(s);
+  processDefaults(s);
+
+  if (Math.random() < 0.12) depositFlow(s);
+  if (Math.random() < 0.06) loanRequestEvent(s);
+  if (Math.random() < 0.02) ecbRateChange(s);
+  if (Math.random() < 0.003) regimeChange(s);
+
+  checkReserves(s);
+
+  const rr = reserveRatio(s);
+  const nim = computeNim(s);
+  const eq = equity(s);
+  s.historyRR.push(rr);
+  s.historyNIM.push(nim);
+  s.historyEQ.push(eq);
+  if (s.historyRR.length > 500) { s.historyRR.shift(); s.historyNIM.shift(); s.historyEQ.shift(); }
+
+  updateUI();
+  updateCharts();
+  updateEventLog();
+  updateLoanApps();
+  save();
+}
+
+function approveLoan(id) {
+  const s = state;
+  const entry = s.eventLog.find(e => e.loanRequestId === id && e.type === 'loan_request');
+  if (!entry || entry.approved !== undefined) return;
+  const amount = entry.loanAmount;
+  s.loans += amount;
+  s.deposits += amount;
+  entry.approved = true;
+  entry.msg = entry.msg + ' — APPROVED';
+  entry.cls = 'event-income';
+  addEvent(s, 'loan', 'Loan approved: ' + fmtDollar(amount), 'event-income');
+  checkReserves(s);
+  updateUI();
+  updateCharts();
+  updateEventLog();
+  updateLoanApps();
+  save();
+}
+
+function rejectLoan(id) {
+  const s = state;
+  const entry = s.eventLog.find(e => e.loanRequestId === id && e.type === 'loan_request');
+  if (!entry || entry.approved !== undefined) return;
+  entry.approved = false;
+  entry.msg = entry.msg + ' — REJECTED';
+  entry.cls = 'event-expense';
+  updateEventLog();
+  updateLoanApps();
+  save();
+}
+
+function cbBorrow() {
+  const s = state;
+  const input = document.getElementById('cbAmount');
+  const amount = parseFloat(input.value) || 0;
+  if (amount <= 0) return;
+  s.cbBorrowing += amount;
+  s.reserves += amount;
+  addEvent(s, 'cb', 'Borrowed ' + fmtDollar(amount) + ' from CB at MLF', 'event-expense');
+  updateUI();
+  save();
+}
+
+function cbRepay() {
+  const s = state;
+  const input = document.getElementById('cbAmount');
+  const amount = Math.min(parseFloat(input.value) || 0, s.cbBorrowing);
+  if (amount <= 0) return;
+  s.cbBorrowing -= amount;
+  s.reserves -= amount;
+  addEvent(s, 'cb', 'Repaid ' + fmtDollar(amount) + ' to CB', 'event-income');
+  updateUI();
+  save();
+}
+
+function updateUI() {
+  const s = state;
+  document.getElementById('gameDate').textContent = gameDateStr(s.tick);
+  document.getElementById('quarter').textContent = quarterStr(s.tick);
+  document.getElementById('autoAcceptDisplay').textContent = s.autoAcceptThreshold.toFixed(1) + '%';
+  const badge = document.getElementById('regimeBadge');
+  badge.textContent = s.regime.toUpperCase();
+  badge.className = 'regime-badge regime-' + s.regime;
+
+  const rr = reserveRatio(s);
+  const eq = equity(s);
+  const nim = computeNim(s);
+  const npl = trailingNpl(s);
+
+  document.getElementById('bsReserves').textContent = fmtDollar(s.reserves);
+  document.getElementById('bsLoans').textContent = fmtDollar(s.loans);
+  document.getElementById('bsBonds').textContent = fmtDollar(s.bonds);
+  document.getElementById('bsAssetsTotal').textContent = fmtDollar(totalAssets(s));
+  document.getElementById('bsDeposits').textContent = fmtDollar(s.deposits);
+  document.getElementById('bsCbBorrowing').textContent = fmtDollar(s.cbBorrowing);
+  const eqEl = document.getElementById('bsEquity');
+  eqEl.textContent = fmtDollar(eq);
+  eqEl.style.color = eq >= 0 ? '#3fb950' : '#f85149';
+  document.getElementById('bsLiabilitiesTotal').textContent = fmtDollar(s.deposits + s.cbBorrowing + eq);
+
+  const rrEl = document.getElementById('metricReserveRatio');
+  rrEl.textContent = fmtPct(rr);
+  rrEl.style.color = rr >= 1 ? '#3fb950' : '#f85149';
+  document.getElementById('metricEquity').textContent = fmtDollar(eq);
+  document.getElementById('metricEquity').style.color = eq >= 0 ? '#c9d1d9' : '#f85149';
+  document.getElementById('metricNim').textContent = fmtPct(nim);
+  document.getElementById('metricNim').style.color = nim >= 0 ? '#3fb950' : '#f85149';
+  document.getElementById('metricNpl').textContent = fmtPct(npl);
+  document.getElementById('metricNpl').style.color = npl < 2 ? '#3fb950' : npl < 5 ? '#d29922' : '#f85149';
+
+  document.getElementById('loanRateDisplay').textContent = s.loanRate.toFixed(2) + '%';
+  document.getElementById('depositRateDisplay').textContent = s.depositRate.toFixed(2) + '%';
+
+  document.getElementById('ecbMlf').textContent = 'MLF ' + s.ecbMlfRate.toFixed(2) + '%';
+  document.getElementById('ecbMro').textContent = 'MRO ' + s.ecbMroRate.toFixed(2) + '%';
+  document.getElementById('ecbDepo').textContent = 'Depo ' + s.ecbDepositRate.toFixed(2) + '%';
+}
+
+function updateEventLog() {
+  const container = document.getElementById('eventLog');
+  const s = state;
+  if (s.eventLog.length === 0) {
+    container.innerHTML = '<div class="events-empty">Waiting for events…</div>';
+    return;
+  }
+  let html = '';
+  for (const e of s.eventLog) {
+    html += '<div class="event-entry">';
+    html += '<span class="event-tick">[' + e.quarter + ']</span>';
+    html += '<span class="event-msg ' + (e.cls || '') + '">' + escapeHtml(e.msg);
+    if (e.type === 'loan_request' && e.approved === undefined) {
+      html += ' <span class="event-prob">(default: ' + e.defaultProb.toFixed(1) + '%)</span>';
+    }
+    html += '</span></div>';
+  }
+  container.innerHTML = html;
+}
+
+function updateLoanApps() {
+  const s = state;
+  const container = document.getElementById('loanAppsList');
+  const pending = [];
+  for (const e of s.eventLog) {
+    if (e.type === 'loan_request' && e.approved === undefined) {
+      pending.push(e);
+    }
+  }
+  if (pending.length === 0) {
+    container.innerHTML = '<div class="events-empty">No pending loan applications.</div>';
+    return;
+  }
+  let html = '';
+  for (const e of pending) {
+    html += '<div class="la-entry">';
+    html += '<div class="la-info">';
+    html += '<span class="la-amount">' + fmtDollar(e.loanAmount) + '</span>';
+    html += '<span class="la-prob">Default risk: ' + e.defaultProb.toFixed(1) + '%</span>';
+    html += '</div>';
+    html += '<div class="la-btns">';
+    html += '<button class="event-btn approve" onclick="approveLoan(\'' + e.loanRequestId + '\')">APPROVE</button>';
+    html += '<button class="event-btn reject" onclick="rejectLoan(\'' + e.loanRequestId + '\')">REJECT</button>';
+    html += '</div></div>';
+  }
+  container.innerHTML = html;
+}
+
+function escapeHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function drawChart(svgId, data, color, label, formatter) {
+  const svg = document.getElementById(svgId);
+  if (data.length < 2) {
+    svg.innerHTML = '';
+    return;
+  }
+  const visible = data.slice(-300);
+  const w = svg.clientWidth || 320;
+  const h = 120;
+  const pl = 48, pr = 8, pt = 4, pb = 18;
+  const iw = w - pl - pr, ih = h - pt - pb;
+  const rawMin = Math.min(...visible);
+  const rawMax = Math.max(...visible);
+  const range = rawMax - rawMin;
+  if (range === 0) {
+    svg.innerHTML = '';
+    return;
+  }
+  const pad = range * 0.08;
+  const yMin = rawMin - pad;
+  const yMax = rawMax + pad;
+  const yRng = yMax - yMin;
+  let html = '<svg width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '">';
+  const ySteps = 3;
+  for (let i = 0; i <= ySteps; i++) {
+    const y = pt + (i / ySteps) * ih;
+    const val = yMax - (i / ySteps) * yRng;
+    html += '<text x="' + (pl - 4) + '" y="' + (y + 3.5) + '" text-anchor="end" class="chart-label">' + (formatter ? formatter(val) : val.toFixed(2)) + '</text>';
+    if (i > 0) {
+      html += '<line x1="' + pl + '" y1="' + y + '" x2="' + (w - pr) + '" y2="' + y + '" class="chart-grid"/>';
+    }
+  }
+  const step = iw / Math.max(visible.length - 1, 1);
+  const pts = [];
+  for (let i = 0; i < visible.length; i++) {
+    const x = pl + i * step;
+    const y = pt + ih - ((visible[i] - yMin) / yRng) * ih;
+    pts.push(x.toFixed(1) + ',' + y.toFixed(1));
+  }
+  html += '<polyline points="' + pts.join(' ') + '" class="chart-line" stroke="' + color + '"/>';
+  const lastVal = visible[visible.length - 1];
+  html += '<text x="' + (w - pr) + '" y="' + (pt + 11) + '" text-anchor="end" class="chart-value" fill="' + color + '">' + (formatter ? formatter(lastVal) : lastVal.toFixed(2)) + '</text>';
+  html += '<text x="' + (w / 2) + '" y="' + (h - 2) + '" text-anchor="middle" class="chart-title">' + label + '</text>';
+  html += '</svg>';
+  svg.innerHTML = html;
+}
+
+function updateCharts() {
+  const s = state;
+  drawChart('chartReserves', s.historyRR, '#58a6ff', 'Reserve Ratio', v => v.toFixed(2) + '%');
+  drawChart('chartNim', s.historyNIM, '#3fb950', 'Net Interest Margin', v => v.toFixed(2) + '%');
+  drawChart('chartEquity', s.historyEQ, '#d29922', 'Equity', v => '$' + (v >= 0 ? v.toFixed(0) : '-' + Math.abs(v).toFixed(0)));
+}
+
+let intervalId = null;
+
+function updateLoop() {
+  if (intervalId) { clearInterval(intervalId); intervalId = null; }
+  const s = state;
+  if (s.paused) return;
+  const ms = Math.round(1000 / s.speed);
+  if (ms < 20) {
+    let batch = Math.floor(s.speed);
+    intervalId = setInterval(() => { for (let i = 0; i < batch; i++) tick(); }, 1000);
+  } else {
+    intervalId = setInterval(tick, ms);
+  }
+}
+
+function setSpeed(speed) {
+  state.speed = speed;
+  document.querySelectorAll('.speed-btn[data-speed]').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.speed) === speed);
+  });
+  updateLoop();
+}
+
+function togglePause() {
+  state.paused = !state.paused;
+  document.getElementById('pauseBtn').textContent = state.paused ? '▶' : '⏸';
+  updateLoop();
+}
+
+document.getElementById('autoAcceptSlider').addEventListener('input', function() {
+  state.autoAcceptThreshold = parseFloat(this.value);
+  document.getElementById('autoAcceptDisplay').textContent = state.autoAcceptThreshold.toFixed(1) + '%';
+  save();
+});
+
+document.getElementById('loanRateSlider').addEventListener('input', function() {
+  state.loanRate = parseFloat(this.value);
+  updateUI();
+  save();
+});
+
+document.getElementById('depositRateSlider').addEventListener('input', function() {
+  state.depositRate = parseFloat(this.value);
+  updateUI();
+  save();
+});
+
+document.getElementById('pauseBtn').addEventListener('click', togglePause);
+document.getElementById('resetBtn').addEventListener('click', resetGame);
+document.getElementById('cbBorrowBtn').addEventListener('click', cbBorrow);
+document.getElementById('cbRepayBtn').addEventListener('click', cbRepay);
+document.querySelectorAll('.speed-btn[data-speed]').forEach(b => {
+  b.addEventListener('click', () => setSpeed(parseInt(b.dataset.speed)));
+});
+
+function init() {
+  if (!load()) {
+    state = createInitialState();
+  }
+  if (state.historyRR.length === 0) {
+    state.historyRR.push(reserveRatio(state));
+    state.historyNIM.push(computeNim(state));
+    state.historyEQ.push(equity(state));
+  }
+  document.querySelector('.speed-btn[data-speed="' + state.speed + '"]')?.classList.add('active');
+  if (state.paused) document.getElementById('pauseBtn').textContent = '▶';
+  document.getElementById('autoAcceptSlider').value = state.autoAcceptThreshold;
+  updateUI();
+  updateCharts();
+  updateEventLog();
+  updateLoanApps();
+  updateLoop();
+}
+
+init();
+</script>
+</body>
+</html>

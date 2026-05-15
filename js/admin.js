@@ -1,5 +1,6 @@
 import { getState } from './state.js';
 import { applyAdminConfig } from './main.js';
+import { getBalance } from './ledger.js';
 
 const ADMIN_PRESET_KEY = 'bankrunner-admin-preset';
 
@@ -23,11 +24,11 @@ function toggleAdminPanel() {
 
 function populateFromState() {
   const s = getState();
-  document.getElementById('adminReserves').value = s.reserves;
-  document.getElementById('adminLoans').value = s.loans;
-  document.getElementById('adminBonds').value = s.bonds;
-  document.getElementById('adminDeposits').value = s.deposits;
-  document.getElementById('adminCbBorrowing').value = s.cbBorrowing;
+  document.getElementById('adminReserves').value = getBalance(s, 'cash');
+  document.getElementById('adminLoans').value = getBalance(s, 'loansReceivable');
+  document.getElementById('adminBonds').value = getBalance(s, 'bonds');
+  document.getElementById('adminDeposits').value = getBalance(s, 'deposits');
+  document.getElementById('adminCbBorrowing').value = getBalance(s, 'cbBorrowing');
   document.getElementById('adminLoanRate').value = s.loanRate;
   document.getElementById('adminDepositRate').value = s.depositRate;
   document.getElementById('adminEcbDepositRate').value = s.ecbDepositRate;

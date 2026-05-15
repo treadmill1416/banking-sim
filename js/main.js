@@ -1,12 +1,13 @@
 import { getState, setState, createInitialState, load, save, reset as resetState } from './state.js';
-import { accrueInterest, processDefaults, checkReserves, expireOldLoans, reserveRatio, computeNim, equity, updatePnl, tryDepositStability, processLoanMaturities, computeDefaultRate } from './mechanics.js';
+import { accrueInterest, processDefaults, checkReserves, expireOldLoans, reserveRatio, computeNim, equity, tryDepositStability, processLoanMaturities, computeDefaultRate } from './mechanics.js';
 import { tryDepositFlow, tryLoanRequest, tryEcbChange, tryRegimeChange } from './events.js';
 import { approveLoan, rejectLoan, cbBorrow, cbRepay } from './actions.js';
 import { fmtDollar } from './utils.js';
-import { updateUI, updateEventLog, updateLoanApps, updatePnlDisplay, updateAcceptedLoans } from './ui.js';
+import { updateUI, updateEventLog, updateLoanApps, updatePnlDisplay, updateAcceptedLoans, updateLedgerDisplay, updateAccountingTab } from './ui.js';
 import { updateCharts } from './charts.js';
 import { HISTORY_MAX } from './constants.js';
 import { initAdmin } from './admin.js';
+import { postDailyInterest, updateLedgerPnl, initLedger } from './ledger.js';
 
 export let intervalId = null;
 
@@ -15,7 +16,6 @@ function tick() {
   s.tick++;
 
   accrueInterest(s);
-  updatePnl(s);
   processDefaults(s);
   processLoanMaturities(s);
   tryDepositFlow(s);
@@ -25,6 +25,9 @@ function tick() {
   tryRegimeChange(s);
   expireOldLoans(s);
   checkReserves(s);
+
+  if (s.tick % 24 === 0) postDailyInterest(s);
+  updateLedgerPnl(s);
 
   s.defaultRateHistory.push(computeDefaultRate(s));
   if (s.defaultRateHistory.length > HISTORY_MAX) s.defaultRateHistory.shift();
@@ -36,6 +39,7 @@ function tick() {
 
   updateUI();
   updatePnlDisplay();
+  if (s.tick % 24 === 0) { updateLedgerDisplay(); updateAccountingTab(); }
   updateCharts();
   updateEventLog();
   updateLoanApps();
@@ -64,6 +68,7 @@ export function applyAdminConfig(overrides) {
   s.tick = 0;
   s.paused = true;
   s.weightedLoanRate = overrides.loanRate || s.loanRate;
+  initLedger(s);
   s.historyRR = [reserveRatio(s)];
   s.historyNIM = [computeNim(s)];
   s.historyEQ = [equity(s)];
@@ -126,6 +131,7 @@ function resetGame() {
       repaidAtTick: null
     });
   }
+  initLedger(s);
   s.historyRR.push(reserveRatio(s));
   s.historyNIM.push(computeNim(s));
   s.historyEQ.push(equity(s));
@@ -157,6 +163,8 @@ function onCdRepayClick() { cbRepay(); updateAll(); }
 export function updateAll() {
   updateUI();
   updatePnlDisplay();
+  updateLedgerDisplay();
+  updateAccountingTab();
   updateCharts();
   updateEventLog();
   updateLoanApps();
@@ -206,6 +214,16 @@ function bindEvents() {
     getState().autoCbBorrowing = this.checked;
     save();
   });
+
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      this.classList.add('active');
+      document.getElementById('tab' + this.dataset.tab.charAt(0).toUpperCase() + this.dataset.tab.slice(1)).classList.add('active');
+      if (this.dataset.tab === 'accounting') updateAccountingTab();
+    });
+  });
 }
 
 function initCollapsible() {
@@ -226,6 +244,7 @@ function init() {
     setState(createInitialState());
   }
   const s = getState();
+  if (!s.ledgerJournal || s.ledgerJournal.length === 0) initLedger(s);
   if (s.loanRecords.length === 0 && s.loans > 0) {
     s.loanRecords.push({
       id: 'loan-0',

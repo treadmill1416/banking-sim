@@ -1,6 +1,7 @@
 import { getState } from './state.js';
 import { addEvent } from './state.js';
 import { checkReserves, processLoanApproval } from './mechanics.js';
+import { postJournal, getBalance } from './ledger.js';
 import { fmtDollar } from './utils.js';
 
 export function approveLoan(id) {
@@ -26,17 +27,21 @@ export function cbBorrow() {
   const input = document.getElementById('cbAmount');
   const amount = parseFloat(input.value) || 0;
   if (amount <= 0) return;
-  s.cbBorrowing += amount;
-  s.reserves += amount;
+  postJournal(s, [
+    { account: 'cash', debit: amount },
+    { account: 'cbBorrowing', credit: amount },
+  ], 'Manual CB borrowing');
   addEvent(s, 'cb', 'Borrowed ' + fmtDollar(amount) + ' from CB at MLF', 'event-expense');
 }
 
 export function cbRepay() {
   const s = getState();
   const input = document.getElementById('cbAmount');
-  const amount = Math.min(parseFloat(input.value) || 0, s.cbBorrowing);
+  const amount = Math.min(parseFloat(input.value) || 0, getBalance(s, 'cbBorrowing'));
   if (amount <= 0) return;
-  s.cbBorrowing -= amount;
-  s.reserves -= amount;
+  postJournal(s, [
+    { account: 'cbBorrowing', debit: amount },
+    { account: 'cash', credit: amount },
+  ], 'Manual CB repayment');
   addEvent(s, 'cb', 'Repaid ' + fmtDollar(amount) + ' to CB', 'event-income');
 }

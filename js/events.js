@@ -1,6 +1,7 @@
 import { REGIME_LOAN_DEMAND, REGIME_ECB_BIAS, REGIME_DEFAULT_RISK, REGIME_DEPOSIT_MOD, REGIME_TRANSITIONS, REGIME_NAMES, ECB_RATE_NAMES, CB_SPREAD, RATE_MIN, RATE_MAX, PROB, TICKS_PER_MONTH } from './constants.js';
 import { addEvent } from './state.js';
 import { processLoanApproval } from './mechanics.js';
+import { postJournal, getBalance } from './ledger.js';
 import { fmtDollar } from './utils.js';
 
 export function tryDepositFlow(s) {
@@ -13,15 +14,20 @@ export function tryDepositFlow(s) {
   const amount = (base + flowModifier) * regimeMod;
   if (amount > 0) {
     const inflow = amount * (0.5 + Math.random() * 0.5);
-    s.reserves += inflow;
-    s.deposits += inflow;
+    postJournal(s, [
+      { account: 'cash', debit: inflow },
+      { account: 'deposits', credit: inflow },
+    ], 'Deposit inflow');
     addEvent(s, 'deposit', 'Deposit inflow +' + fmtDollar(inflow), 'event-income');
   } else {
     const outflow = -amount * (0.3 + Math.random() * 0.4);
-    const actual = Math.min(outflow, s.deposits * 0.02);
+    const deposits = getBalance(s, 'deposits');
+    const actual = Math.min(outflow, deposits * 0.02);
     if (actual > 1000) {
-      s.reserves = Math.max(0, s.reserves - actual);
-      s.deposits = Math.max(0, s.deposits - actual);
+      postJournal(s, [
+        { account: 'deposits', debit: actual },
+        { account: 'cash', credit: actual },
+      ], 'Deposit outflow');
       addEvent(s, 'deposit', 'Deposit outflow ' + fmtDollar(-actual), 'event-expense');
     }
   }

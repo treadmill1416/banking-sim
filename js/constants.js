@@ -51,7 +51,7 @@ export const INITIAL = {
   weightedLoanRate: 5.50,
   depositStabilityThreshold: 0,
   loanRequestsPerMonth: 40,
-  pnl: { loanInterest: 0, depositInterest: 0, reserveInterest: 0, cbInterest: 0, defaults: 0, net: 0, lastResetTick: 0, lastTotal: null },
+  ledgerJournal: [], ledgerBalances: {}, ledgerNextId: 1, _dailyInt: { loanInt: 0, depoInt: 0, resInt: 0, cbInt: 0 }, ledgerMonthStart: null, ledgerLastMonth: null,
   loanRecords: [],
   nextLoanRecordId: 1,
   defaultRateHistory: []

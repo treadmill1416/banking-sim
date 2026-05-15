@@ -1,30 +1,37 @@
 import { TICKS_PER_YEAR, TICKS_PER_MONTH, RESERVE_RATIO_TARGET, NPL_WINDOW, DEFAULT_WINDOW, REGIME_MULTIPLIERS, DEFAULT_ANNUAL_RATE, PROB, LOAN_EXPIRY_TICKS, LOAN_DEFAULT_DURATION, DEPO_STABILITY_PROB, DEPO_STABILITY_RATE } from './constants.js';
 import { addEvent } from './state.js';
 import { fmtDollar } from './utils.js';
+import { postJournal, getBalance, getEquity, getNetIncome } from './ledger.js';
 
 export function requiredReserves(s) {
-  return s.deposits * RESERVE_RATIO_TARGET;
+  return getBalance(s, 'deposits') * RESERVE_RATIO_TARGET;
 }
 
 export function equity(s) {
-  return s.reserves + s.loans + s.bonds - s.deposits - s.cbBorrowing;
+  return getEquity(s);
 }
 
 export function totalAssets(s) {
-  return s.reserves + s.loans + s.bonds;
+  return getBalance(s, 'cash') + getBalance(s, 'loansReceivable') + getBalance(s, 'bonds');
 }
 
 export function reserveRatio(s) {
-  return s.deposits > 0 ? (s.reserves / s.deposits) * 100 : 100;
+  const d = getBalance(s, 'deposits');
+  return d > 0 ? (getBalance(s, 'cash') / d) * 100 : 100;
 }
 
 export function computeNim(s) {
-  const ea = s.loans + s.bonds + s.reserves;
+  const loans = getBalance(s, 'loansReceivable');
+  const cash = getBalance(s, 'cash');
+  const bonds = getBalance(s, 'bonds');
+  const deposits = getBalance(s, 'deposits');
+  const cb = getBalance(s, 'cbBorrowing');
+  const ea = loans + bonds + cash;
   if (ea < 1) return 0;
-  const annualLoan = s.loans * (s.weightedLoanRate / 100);
-  const annualDepo = s.deposits * (s.depositRate / 100);
-  const annualRes = s.reserves * (s.ecbDepositRate / 100);
-  const annualCb = s.cbBorrowing * (s.ecbMlfRate / 100);
+  const annualLoan = loans * (s.weightedLoanRate / 100);
+  const annualDepo = deposits * (s.depositRate / 100);
+  const annualRes = cash * (s.ecbDepositRate / 100);
+  const annualCb = cb * (s.ecbMlfRate / 100);
   const net = annualLoan + annualRes - annualDepo - annualCb;
   return (net / ea) * 100;
 }
@@ -35,43 +42,20 @@ export function trailingNpl(s) {
     if (s.tick - s.defaultTicks[i] <= NPL_WINDOW) total += s.defaultAmounts[i];
     else break;
   }
-  return s.loans > 0 ? (total / s.loans) * 100 : 0;
+  const loans = getBalance(s, 'loansReceivable');
+  return loans > 0 ? (total / loans) * 100 : 0;
 }
 
 export function accrueInterest(s) {
   const hourly = 1 / TICKS_PER_YEAR;
-  const loanInt = s.loans * (s.weightedLoanRate / 100) * hourly;
-  const depoInt = s.deposits * (s.depositRate / 100) * hourly;
-  const resInt = s.reserves * (s.ecbDepositRate / 100) * hourly;
-  const cbInt = s.cbBorrowing * (s.ecbMlfRate / 100) * hourly;
-  const net = loanInt + resInt - depoInt - cbInt;
-  s.reserves += net;
-}
-
-export function updatePnl(s) {
-  const hourly = 1 / TICKS_PER_YEAR;
-  s.pnl.loanInterest += s.loans * (s.weightedLoanRate / 100) * hourly;
-  s.pnl.depositInterest += s.deposits * (s.depositRate / 100) * hourly;
-  s.pnl.reserveInterest += s.reserves * (s.ecbDepositRate / 100) * hourly;
-  s.pnl.cbInterest += s.cbBorrowing * (s.ecbMlfRate / 100) * hourly;
-  s.pnl.net = s.pnl.loanInterest + s.pnl.reserveInterest - s.pnl.depositInterest - s.pnl.cbInterest - s.pnl.defaults;
-  if (s.tick - s.pnl.lastResetTick >= TICKS_PER_MONTH) {
-    s.pnl.lastTotal = {
-      loanInterest: s.pnl.loanInterest,
-      depositInterest: s.pnl.depositInterest,
-      reserveInterest: s.pnl.reserveInterest,
-      cbInterest: s.pnl.cbInterest,
-      defaults: s.pnl.defaults,
-      net: s.pnl.net
-    };
-    s.pnl.loanInterest = 0;
-    s.pnl.depositInterest = 0;
-    s.pnl.reserveInterest = 0;
-    s.pnl.cbInterest = 0;
-    s.pnl.defaults = 0;
-    s.pnl.net = 0;
-    s.pnl.lastResetTick = s.tick;
-  }
+  const loans = getBalance(s, 'loansReceivable');
+  const deposits = getBalance(s, 'deposits');
+  const cash = getBalance(s, 'cash');
+  const cb = getBalance(s, 'cbBorrowing');
+  s._dailyInt.loanInt += loans * (s.weightedLoanRate / 100) * hourly;
+  s._dailyInt.depoInt += deposits * (s.depositRate / 100) * hourly;
+  s._dailyInt.resInt += cash * (s.ecbDepositRate / 100) * hourly;
+  s._dailyInt.cbInt += cb * (s.ecbMlfRate / 100) * hourly;
 }
 
 export function tryDepositStability(s) {
@@ -80,12 +64,16 @@ export function tryDepositStability(s) {
   const severity = Math.abs(spread - s.depositStabilityThreshold);
   const prob = Math.min(0.1, DEPO_STABILITY_PROB * severity * REGIME_MULTIPLIERS[s.regime]);
   if (Math.random() >= prob) return;
+  const deposits = getBalance(s, 'deposits');
   const pct = Math.min(0.01, DEPO_STABILITY_RATE * severity * REGIME_MULTIPLIERS[s.regime]);
-  const outflow = s.deposits * pct * (0.5 + Math.random());
+  const outflow = deposits * pct * (0.5 + Math.random());
   if (outflow < 1000) return;
-  s.reserves = Math.max(0, s.reserves - outflow);
-  s.deposits = Math.max(0, s.deposits - outflow);
-  addEvent(s, 'deposit', 'Deposit outflow (rate uncompetitive): ' + fmtDollar(-outflow), 'event-expense');
+  const actual = Math.min(outflow, deposits);
+  postJournal(s, [
+    { account: 'deposits', debit: actual },
+    { account: 'cash', credit: actual },
+  ], 'Deposit flight (uncompetitive rate)');
+  addEvent(s, 'deposit', 'Deposit outflow (rate uncompetitive): ' + fmtDollar(-actual), 'event-expense');
 }
 
 export function customerRefuses(s, rate) {
@@ -114,11 +102,13 @@ export function processLoanApproval(s, entry, rate) {
     repaidAtTick: null
   };
   s.loanRecords.push(lr);
-  const oldLoans = s.loans;
-  s.loans += entry.loanAmount;
-  s.deposits += entry.loanAmount;
+  const oldLoans = getBalance(s, 'loansReceivable');
+  postJournal(s, [
+    { account: 'loansReceivable', debit: entry.loanAmount },
+    { account: 'deposits', credit: entry.loanAmount },
+  ], 'Loan approval - ' + lr.id);
   if (oldLoans > 0) {
-    s.weightedLoanRate = (oldLoans * s.weightedLoanRate + entry.loanAmount * rate) / s.loans;
+    s.weightedLoanRate = (oldLoans * s.weightedLoanRate + entry.loanAmount * rate) / getBalance(s, 'loansReceivable');
   } else {
     s.weightedLoanRate = rate;
   }
@@ -134,8 +124,11 @@ export function processDefaults(s) {
     const annualProb = (lr.defaultProb / 100) * REGIME_MULTIPLIERS[s.regime];
     const tickProb = annualProb / TICKS_PER_YEAR;
     if (tickProb > 0 && Math.random() < tickProb) {
-      const actual = lr.amount;
-      s.loans = Math.max(0, s.loans - actual);
+      const actual = Math.min(lr.amount, getBalance(s, 'loansReceivable'));
+      postJournal(s, [
+        { account: 'defaultLosses', debit: actual },
+        { account: 'loansReceivable', credit: actual },
+      ], 'Loan default - ' + lr.id);
       s.cumulativeDefaults += actual;
       s.defaultTicks.push(s.tick);
       s.defaultAmounts.push(actual);
@@ -143,7 +136,6 @@ export function processDefaults(s) {
         s.defaultTicks.shift();
         s.defaultAmounts.shift();
       }
-      s.pnl.defaults += actual;
       lr.status = 'defaulted';
       lr.repaidAtTick = s.tick;
       recomputeWeightedLoanRate(s);
@@ -156,10 +148,13 @@ export function processLoanMaturities(s) {
   let changed = false;
   for (const lr of s.loanRecords) {
     if (lr.status === 'active' && lr.durationTicks != null && s.tick - lr.createdAt >= lr.durationTicks) {
+      const amt = Math.min(lr.amount, getBalance(s, 'loansReceivable'));
       lr.status = 'repaid';
       lr.repaidAtTick = s.tick;
-      s.loans = Math.max(0, s.loans - lr.amount);
-      s.deposits = Math.max(0, s.deposits - lr.amount);
+      postJournal(s, [
+        { account: 'deposits', debit: amt },
+        { account: 'loansReceivable', credit: amt },
+      ], 'Loan repayment - ' + lr.id);
       changed = true;
       addEvent(s, 'loan', 'Loan matured: ' + fmtDollar(lr.amount) + ' repaid (' + lr.id + ')', 'event-income');
     }
@@ -194,11 +189,14 @@ function recomputeWeightedLoanRate(s) {
 
 export function checkReserves(s) {
   const req = requiredReserves(s);
-  if (s.reserves < req) {
+  const cash = getBalance(s, 'cash');
+  if (cash < req) {
     if (s.autoCbBorrowing) {
-      const deficit = req - s.reserves;
-      s.cbBorrowing += deficit;
-      s.reserves += deficit;
+      const deficit = req - cash;
+      postJournal(s, [
+        { account: 'cash', debit: deficit },
+        { account: 'cbBorrowing', credit: deficit },
+      ], 'Auto-borrow from CB');
       addEvent(s, 'cb', 'Auto-borrowed ' + fmtDollar(deficit) + ' from CB (reserve shortfall)', 'event-expense');
     } else {
       addEvent(s, 'cb', 'Reserves below requirement! Borrow from CB desk.', 'event-warn');

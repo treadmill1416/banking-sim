@@ -1,4 +1,5 @@
 import { SAVE_KEY, INITIAL, EVENT_LOG_MAX, TICKS_PER_QUARTER, TICKS_PER_YEAR } from './constants.js';
+import { initLedger } from './ledger.js';
 
 let _state = null;
 
@@ -37,6 +38,7 @@ export function load() {
           repaidAtTick: null
         });
       }
+      if (!_state.ledgerJournal || _state.ledgerJournal.length === 0) initLedger(_state);
       return true;
     }
   } catch (e) {}

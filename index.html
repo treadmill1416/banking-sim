@@ -26,6 +26,13 @@
   </div>
 </div>
 
+<div class="tab-bar">
+  <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+  <button class="tab-btn" data-tab="accounting">Accounting</button>
+</div>
+
+<div class="tab-panel active" id="tabDashboard">
+
 <div class="charts-section">
   <div class="chart-card"><svg id="chartReserves"></svg></div>
   <div class="chart-card"><svg id="chartNim"></svg></div>
@@ -134,7 +141,31 @@
     <div class="events-empty">Waiting for events…</div>
   </div>
 </div>
-</div>
+
+</div><!-- /tabDashboard -->
+
+<div class="tab-panel" id="tabAccounting">
+  <div class="acct-grid">
+    <div class="card acct-card acct-coa">
+      <h2>Chart of Accounts</h2>
+      <div id="acctCoaBody"></div>
+    </div>
+    <div class="card acct-card acct-tb">
+      <h2>Trial Balance</h2>
+      <div id="acctTbBody"></div>
+    </div>
+    <div class="card acct-card acct-is">
+      <h2>Income Statement</h2>
+      <div id="acctIsBody"></div>
+    </div>
+    <div class="card acct-card acct-journal">
+      <h2>Journal Register</h2>
+      <div id="acctJournalBody"></div>
+    </div>
+  </div>
+</div><!-- /tabAccounting -->
+
+</div><!-- /.app -->
 
 <div class="admin-overlay" id="adminOverlay" style="display:none">
   <div class="admin-modal">

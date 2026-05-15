@@ -1,6 +1,6 @@
 import { REGIME_LOAN_DEMAND, REGIME_ECB_BIAS, REGIME_DEFAULT_RISK, REGIME_DEPOSIT_MOD, REGIME_TRANSITIONS, REGIME_NAMES, ECB_RATE_NAMES, CB_SPREAD, RATE_MIN, RATE_MAX, PROB, TICKS_PER_MONTH } from './constants.js';
 import { addEvent } from './state.js';
-import { processLoanApproval } from './mechanics.js';
+import { processLoanApproval, totalAssets } from './mechanics.js';
 import { postJournal, getBalance } from './ledger.js';
 import { fmtDollar } from './utils.js';
 
@@ -36,10 +36,14 @@ export function tryDepositFlow(s) {
 export function tryLoanRequest(s) {
   const baseProb = (s.loanRequestsPerMonth || 40) / TICKS_PER_MONTH;
   if (Math.random() >= baseProb) return;
-  const demandMult = REGIME_LOAN_DEMAND[s.regime];
-  const rateElasticity = Math.max(0.1, 1 - (s.loanRate - 5) * 0.08);
-  const baseAmount = 100000 + Math.random() * 1900000;
-  const amount = baseAmount * demandMult * rateElasticity;
+  const ta = totalAssets(s);
+  if (ta < 100) return;
+  const peakPct = (s.loanDemandPeakPct || 3) / 100;
+  const modeTarget = ta * peakPct;
+  const alpha = 2;
+  const raw = modeTarget / Math.pow(Math.random(), 1 / alpha);
+  const maxLoan = ta * 0.9;
+  const amount = Math.min(raw, maxLoan);
   const riskMult = REGIME_DEFAULT_RISK[s.regime];
   const defaultProb = Math.min((0.5 + Math.random() * 12) * riskMult, 35);
   const id = 'lr-' + s.nextEventId;

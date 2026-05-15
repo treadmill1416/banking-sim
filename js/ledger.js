@@ -17,7 +17,7 @@ export function initLedger(s) {
   s.ledgerJournal = [];
   s.ledgerBalances = {};
   s.ledgerNextId = 1;
-  s._dailyInt = { loanInt: 0, depoInt: 0, resInt: 0, cbInt: 0 };
+  s._dailyInt = { depoInt: 0, resInt: 0, cbInt: 0 };
   s.ledgerMonthStart = null;
   s.ledgerLastMonth = null;
 
@@ -103,10 +103,6 @@ export function getNetIncome(s) {
 export function postDailyInterest(s) {
   const d = s._dailyInt;
   const entries = [];
-  if (Math.abs(d.loanInt) >= 0.0005) {
-    entries.push({ account: 'cash', debit: d.loanInt });
-    entries.push({ account: 'interestIncome', credit: d.loanInt });
-  }
   if (Math.abs(d.depoInt) >= 0.0005) {
     entries.push({ account: 'interestExpense', debit: d.depoInt });
     entries.push({ account: 'cash', credit: d.depoInt });
@@ -122,7 +118,7 @@ export function postDailyInterest(s) {
   if (entries.length > 0) {
     postJournal(s, entries, 'Daily interest');
   }
-  s._dailyInt = { loanInt: 0, depoInt: 0, resInt: 0, cbInt: 0 };
+  s._dailyInt = { depoInt: 0, resInt: 0, cbInt: 0 };
 }
 
 export function getCurrentMonthPnl(s) {

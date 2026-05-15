@@ -1,5 +1,5 @@
 import { getState, setState, createInitialState, load, save, reset as resetState } from './state.js';
-import { accrueInterest, processDefaults, checkReserves, expireOldLoans, reserveRatio, computeNim, equity, tryDepositStability, processLoanMaturities, computeDefaultRate } from './mechanics.js';
+import { accrueInterest, processDefaults, checkReserves, expireOldLoans, reserveRatio, computeNim, equity, tryDepositStability, processLoanPayments, computeDefaultRate } from './mechanics.js';
 import { tryDepositFlow, tryLoanRequest, tryEcbChange, tryRegimeChange } from './events.js';
 import { approveLoan, rejectLoan, cbBorrow, cbRepay } from './actions.js';
 import { fmtDollar } from './utils.js';
@@ -17,7 +17,7 @@ function tick() {
 
   accrueInterest(s);
   processDefaults(s);
-  processLoanMaturities(s);
+  processLoanPayments(s);
   tryDepositFlow(s);
   tryDepositStability(s);
   tryLoanRequest(s);
@@ -82,11 +82,14 @@ export function applyAdminConfig(overrides) {
     id: 'loan-0',
     amount: s.loans,
     rate: s.loanRate,
-    durationTicks: null,
+    durationMonths: null,
+    monthlyPrincipal: 0,
+    remainingBalance: s.loans,
     defaultProb: 2,
     status: 'active',
     createdAt: 0,
-    repaidAtTick: null
+    repaidAtTick: null,
+    lastPaymentTick: 0,
   }] : [];
   s.nextLoanRecordId = 1;
   s.defaultRateHistory = [];
@@ -124,11 +127,14 @@ function resetGame() {
       id: 'loan-0',
       amount: s.loans,
       rate: s.loanRate,
-      durationTicks: null,
+      durationMonths: null,
+      monthlyPrincipal: 0,
+      remainingBalance: s.loans,
       defaultProb: 2,
       status: 'active',
       createdAt: 0,
-      repaidAtTick: null
+      repaidAtTick: null,
+      lastPaymentTick: 0,
     });
   }
   initLedger(s);
@@ -250,11 +256,14 @@ function init() {
       id: 'loan-0',
       amount: s.loans,
       rate: s.weightedLoanRate || s.loanRate,
-      durationTicks: null,
+      durationMonths: null,
+      monthlyPrincipal: 0,
+      remainingBalance: s.loans,
       defaultProb: 2,
       status: 'active',
       createdAt: 0,
-      repaidAtTick: null
+      repaidAtTick: null,
+      lastPaymentTick: 0,
     });
   }
   if (s.historyRR.length === 0) {

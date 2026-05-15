@@ -247,11 +247,15 @@ export function updateAcceptedLoans() {
     html += '<span class="al-rate">' + lr.rate.toFixed(2) + '%</span>';
     html += '<span class="al-status ' + statusCls + '">' + statusLabel + '</span>';
     if (lr.status === 'active') {
-      if (lr.durationTicks != null) {
-        const totalMonths = Math.round(lr.durationTicks / TICKS_PER_MONTH);
-        const remain = Math.max(0, lr.durationTicks - (s.tick - lr.createdAt));
-        html += '<span class="al-dur">' + totalMonths + 'mo</span>';
-        html += '<span class="al-remain">' + fmtTicks(remain) + '</span>';
+      if (lr.durationMonths != null) {
+        const remaining = Math.max(0, lr.remainingBalance || lr.amount);
+        const pct = ((lr.amount - remaining) / lr.amount * 100).toFixed(1);
+        const monthlyRateVal = lr.rate / 100 / 12;
+        const monthlyInt = remaining * monthlyRateVal;
+        const monthlyPmt = lr.monthlyPrincipal + monthlyInt;
+        html += '<span class="al-dur">' + lr.durationMonths + 'mo</span>';
+        html += '<span class="al-remain">' + fmtDollar(remaining) + ' (' + pct + '%)</span>';
+        html += '<span class="al-pmt">mo: ' + fmtDollar(monthlyPmt) + '</span>';
       } else {
         html += '<span class="al-dur">∞</span>';
         html += '<span class="al-remain">No maturity</span>';

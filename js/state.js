@@ -31,11 +31,14 @@ export function load() {
           id: 'loan-0',
           amount: _state.loans,
           rate: _state.weightedLoanRate || _state.loanRate,
-          durationTicks: null,
+          durationMonths: null,
+          monthlyPrincipal: 0,
+          remainingBalance: _state.loans,
           defaultProb: 2,
           status: 'active',
           createdAt: 0,
-          repaidAtTick: null
+          repaidAtTick: null,
+          lastPaymentTick: 0,
         });
       }
       if (!_state.ledgerJournal || _state.ledgerJournal.length === 0) initLedger(_state);

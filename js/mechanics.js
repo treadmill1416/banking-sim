@@ -48,11 +48,9 @@ export function trailingNpl(s) {
 
 export function accrueInterest(s) {
   const hourly = 1 / TICKS_PER_YEAR;
-  const loans = getBalance(s, 'loansReceivable');
   const deposits = getBalance(s, 'deposits');
   const cash = getBalance(s, 'cash');
   const cb = getBalance(s, 'cbBorrowing');
-  s._dailyInt.loanInt += loans * (s.weightedLoanRate / 100) * hourly;
   s._dailyInt.depoInt += deposits * (s.depositRate / 100) * hourly;
   s._dailyInt.resInt += cash * (s.ecbDepositRate / 100) * hourly;
   s._dailyInt.cbInt += cb * (s.ecbMlfRate / 100) * hourly;
@@ -95,11 +93,14 @@ export function processLoanApproval(s, entry, rate) {
     id: 'loan-' + (s.nextLoanRecordId++),
     amount: entry.loanAmount,
     rate: rate,
-    durationTicks: months * TICKS_PER_MONTH,
+    durationMonths: months,
+    monthlyPrincipal: entry.loanAmount / months,
+    remainingBalance: entry.loanAmount,
     defaultProb: entry.defaultProb || 2,
     status: 'active',
     createdAt: s.tick,
-    repaidAtTick: null
+    repaidAtTick: null,
+    lastPaymentTick: s.tick,
   };
   s.loanRecords.push(lr);
   const oldLoans = getBalance(s, 'loansReceivable');
@@ -118,13 +119,49 @@ export function processLoanApproval(s, entry, rate) {
   checkReserves(s);
 }
 
+export function processLoanPayments(s) {
+  let changed = false;
+  for (const lr of s.loanRecords) {
+    if (lr.status !== 'active' || lr.durationMonths == null) continue;
+    if (s.tick - lr.lastPaymentTick < TICKS_PER_MONTH) continue;
+
+    const monthlyRate = lr.rate / 100 / 12;
+    const interest = lr.remainingBalance * monthlyRate;
+    const principal = Math.min(lr.monthlyPrincipal, lr.remainingBalance);
+    const total = interest + principal;
+
+    if (total < 0.005) {
+      lr.lastPaymentTick = s.tick;
+      continue;
+    }
+
+    postJournal(s, [
+      { account: 'deposits', debit: total },
+      { account: 'loansReceivable', credit: principal },
+      { account: 'interestIncome', credit: interest },
+    ], 'Monthly payment - ' + lr.id);
+
+    lr.remainingBalance -= principal;
+    lr.lastPaymentTick = s.tick;
+    changed = true;
+
+    if (lr.remainingBalance < 0.005) {
+      lr.status = 'repaid';
+      lr.repaidAtTick = s.tick;
+      addEvent(s, 'loan', 'Loan fully repaid: ' + fmtDollar(lr.amount) + ' (' + lr.id + ')', 'event-income');
+    }
+  }
+  if (changed) recomputeWeightedLoanRate(s);
+}
+
 export function processDefaults(s) {
   for (const lr of s.loanRecords) {
     if (lr.status !== 'active') continue;
     const annualProb = (lr.defaultProb / 100) * REGIME_MULTIPLIERS[s.regime];
     const tickProb = annualProb / TICKS_PER_YEAR;
     if (tickProb > 0 && Math.random() < tickProb) {
-      const actual = Math.min(lr.amount, getBalance(s, 'loansReceivable'));
+      const bal = lr.remainingBalance || lr.amount;
+      const actual = Math.min(bal, getBalance(s, 'loansReceivable'));
       postJournal(s, [
         { account: 'defaultLosses', debit: actual },
         { account: 'loansReceivable', credit: actual },
@@ -136,30 +173,13 @@ export function processDefaults(s) {
         s.defaultTicks.shift();
         s.defaultAmounts.shift();
       }
+      lr.remainingBalance = Math.max(0, (lr.remainingBalance || lr.amount) - actual);
       lr.status = 'defaulted';
       lr.repaidAtTick = s.tick;
       recomputeWeightedLoanRate(s);
       addEvent(s, 'default', 'Loan defaulted: ' + fmtDollar(actual) + ' (' + lr.id + ')', 'event-expense');
     }
   }
-}
-
-export function processLoanMaturities(s) {
-  let changed = false;
-  for (const lr of s.loanRecords) {
-    if (lr.status === 'active' && lr.durationTicks != null && s.tick - lr.createdAt >= lr.durationTicks) {
-      const amt = Math.min(lr.amount, getBalance(s, 'loansReceivable'));
-      lr.status = 'repaid';
-      lr.repaidAtTick = s.tick;
-      postJournal(s, [
-        { account: 'deposits', debit: amt },
-        { account: 'loansReceivable', credit: amt },
-      ], 'Loan repayment - ' + lr.id);
-      changed = true;
-      addEvent(s, 'loan', 'Loan matured: ' + fmtDollar(lr.amount) + ' repaid (' + lr.id + ')', 'event-income');
-    }
-  }
-  if (changed) recomputeWeightedLoanRate(s);
 }
 
 export function computeDefaultRate(s) {
@@ -180,8 +200,9 @@ function recomputeWeightedLoanRate(s) {
   let weighted = 0;
   for (const lr of s.loanRecords) {
     if (lr.status === 'active') {
-      total += lr.amount;
-      weighted += lr.amount * lr.rate;
+      const bal = lr.remainingBalance || lr.amount;
+      total += bal;
+      weighted += bal * lr.rate;
     }
   }
   s.weightedLoanRate = total > 0 ? weighted / total : s.loanRate;

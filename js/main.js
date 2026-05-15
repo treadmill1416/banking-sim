@@ -1,20 +1,23 @@
 import { getState, setState, createInitialState, load, save, reset as resetState } from './state.js';
-import { accrueInterest, processDefaults, checkReserves, expireOldLoans, reserveRatio, computeNim, equity } from './mechanics.js';
+import { accrueInterest, processDefaults, checkReserves, expireOldLoans, reserveRatio, computeNim, equity, updatePnl, tryDepositStability } from './mechanics.js';
 import { tryDepositFlow, tryLoanRequest, tryEcbChange, tryRegimeChange } from './events.js';
 import { approveLoan, rejectLoan, cbBorrow, cbRepay } from './actions.js';
-import { updateUI, updateEventLog, updateLoanApps } from './ui.js';
+import { updateUI, updateEventLog, updateLoanApps, updatePnlDisplay } from './ui.js';
 import { updateCharts } from './charts.js';
 import { HISTORY_MAX } from './constants.js';
+import { initAdmin } from './admin.js';
 
-let intervalId = null;
+export let intervalId = null;
 
 function tick() {
   const s = getState();
   s.tick++;
 
   accrueInterest(s);
+  updatePnl(s);
   processDefaults(s);
   tryDepositFlow(s);
+  tryDepositStability(s);
   tryLoanRequest(s);
   tryEcbChange(s);
   tryRegimeChange(s);
@@ -27,13 +30,14 @@ function tick() {
   if (s.historyRR.length > HISTORY_MAX) { s.historyRR.shift(); s.historyNIM.shift(); s.historyEQ.shift(); }
 
   updateUI();
+  updatePnlDisplay();
   updateCharts();
   updateEventLog();
   updateLoanApps();
   save();
 }
 
-function updateLoop() {
+export function updateLoop() {
   if (intervalId) { clearInterval(intervalId); intervalId = null; }
   const s = getState();
   if (s.paused) return;
@@ -44,6 +48,32 @@ function updateLoop() {
   } else {
     intervalId = setInterval(tick, ms);
   }
+}
+
+export function applyAdminConfig(overrides) {
+  if (intervalId) { clearInterval(intervalId); intervalId = null; }
+  resetState();
+  const s = getState();
+  Object.assign(s, overrides);
+  s.tick = 0;
+  s.paused = true;
+  s.weightedLoanRate = overrides.loanRate || s.loanRate;
+  s.historyRR = [reserveRatio(s)];
+  s.historyNIM = [computeNim(s)];
+  s.historyEQ = [equity(s)];
+  s.eventLog = [];
+  s.nextEventId = 1;
+  s.cumulativeDefaults = 0;
+  s.defaultTicks = [];
+  s.defaultAmounts = [];
+  s.pendingLoans = {};
+  document.getElementById('loanRateSlider').value = s.loanRate;
+  document.getElementById('depositRateSlider').value = s.depositRate;
+  document.getElementById('autoAcceptSlider').value = s.autoAcceptThreshold;
+  document.getElementById('autoCbCheckbox').checked = s.autoCbBorrowing;
+  document.getElementById('pauseBtn').textContent = '▶';
+  updateAll();
+  updateLoop();
 }
 
 function setSpeed(speed) {
@@ -94,8 +124,9 @@ function onLoanAppsClick(e) {
 function onCdBorrowClick() { cbBorrow(); updateAll(); }
 function onCdRepayClick() { cbRepay(); updateAll(); }
 
-function updateAll() {
+export function updateAll() {
   updateUI();
+  updatePnlDisplay();
   updateCharts();
   updateEventLog();
   updateLoanApps();
@@ -149,6 +180,7 @@ function init() {
   document.getElementById('autoAcceptSlider').value = s.autoAcceptThreshold;
   document.getElementById('autoCbCheckbox').checked = s.autoCbBorrowing;
   bindEvents();
+  initAdmin();
   updateAll();
   updateLoop();
 }

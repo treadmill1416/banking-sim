@@ -1,4 +1,4 @@
-import { TICKS_PER_YEAR, RESERVE_RATIO_TARGET, NPL_WINDOW, DEFAULT_WINDOW, REGIME_MULTIPLIERS, DEFAULT_ANNUAL_RATE, PROB, LOAN_EXPIRY_TICKS } from './constants.js';
+import { TICKS_PER_YEAR, TICKS_PER_MONTH, RESERVE_RATIO_TARGET, NPL_WINDOW, DEFAULT_WINDOW, REGIME_MULTIPLIERS, DEFAULT_ANNUAL_RATE, PROB, LOAN_EXPIRY_TICKS, DEPO_STABILITY_PROB, DEPO_STABILITY_RATE } from './constants.js';
 import { addEvent } from './state.js';
 import { fmtDollar } from './utils.js';
 
@@ -48,6 +48,46 @@ export function accrueInterest(s) {
   s.reserves += net;
 }
 
+export function updatePnl(s) {
+  const hourly = 1 / TICKS_PER_YEAR;
+  s.pnl.loanInterest += s.loans * (s.weightedLoanRate / 100) * hourly;
+  s.pnl.depositInterest += s.deposits * (s.depositRate / 100) * hourly;
+  s.pnl.reserveInterest += s.reserves * (s.ecbDepositRate / 100) * hourly;
+  s.pnl.cbInterest += s.cbBorrowing * (s.ecbMlfRate / 100) * hourly;
+  s.pnl.net = s.pnl.loanInterest + s.pnl.reserveInterest - s.pnl.depositInterest - s.pnl.cbInterest - s.pnl.defaults;
+  if (s.tick - s.pnl.lastResetTick >= TICKS_PER_MONTH) {
+    s.pnl.lastTotal = {
+      loanInterest: s.pnl.loanInterest,
+      depositInterest: s.pnl.depositInterest,
+      reserveInterest: s.pnl.reserveInterest,
+      cbInterest: s.pnl.cbInterest,
+      defaults: s.pnl.defaults,
+      net: s.pnl.net
+    };
+    s.pnl.loanInterest = 0;
+    s.pnl.depositInterest = 0;
+    s.pnl.reserveInterest = 0;
+    s.pnl.cbInterest = 0;
+    s.pnl.defaults = 0;
+    s.pnl.net = 0;
+    s.pnl.lastResetTick = s.tick;
+  }
+}
+
+export function tryDepositStability(s) {
+  const spread = s.depositRate - s.ecbMroRate;
+  if (spread >= s.depositStabilityThreshold) return;
+  const severity = Math.abs(spread - s.depositStabilityThreshold);
+  const prob = Math.min(0.1, DEPO_STABILITY_PROB * severity * REGIME_MULTIPLIERS[s.regime]);
+  if (Math.random() >= prob) return;
+  const pct = Math.min(0.01, DEPO_STABILITY_RATE * severity * REGIME_MULTIPLIERS[s.regime]);
+  const outflow = s.deposits * pct * (0.5 + Math.random());
+  if (outflow < 1000) return;
+  s.reserves = Math.max(0, s.reserves - outflow);
+  s.deposits = Math.max(0, s.deposits - outflow);
+  addEvent(s, 'deposit', 'Deposit outflow (rate uncompetitive): ' + fmtDollar(-outflow), 'event-expense');
+}
+
 export function customerRefuses(s, rate) {
   const spread = Math.max(0, rate - s.ecbMroRate);
   const refusalProb = Math.max(5, Math.min(95, spread * REGIME_MULTIPLIERS[s.regime] * 8));
@@ -90,6 +130,7 @@ export function processDefaults(s) {
       s.defaultTicks.shift();
       s.defaultAmounts.shift();
     }
+    s.pnl.defaults += actual;
     addEvent(s, 'default', 'Loan default: ' + fmtDollar(actual), 'event-expense');
   }
 }

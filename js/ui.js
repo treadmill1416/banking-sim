@@ -1,6 +1,7 @@
 import { getState } from './state.js';
 import { reserveRatio, equity, totalAssets, computeNim, trailingNpl } from './mechanics.js';
 import { fmtDollar, fmtPct, escapeHtml, gameDateStr, quarterStr } from './utils.js';
+import { TICKS_PER_MONTH } from './constants.js';
 
 export function updateUI() {
   const s = getState();
@@ -63,6 +64,35 @@ export function updateEventLog() {
     html += '</span></div>';
   }
   container.innerHTML = html;
+}
+
+function pnlSigned(n) {
+  if (n === undefined || n === null || isNaN(n)) return '—';
+  if (Math.abs(n) < 0.5) return '$0';
+  const abs = fmtDollar(Math.abs(n));
+  return n >= 0 ? '+' + abs : '−' + abs;
+}
+
+export function updatePnlDisplay() {
+  const s = getState();
+  const pnl = s.pnl;
+  const ticksSince = s.tick - pnl.lastResetTick;
+  const pct = ticksSince > 0 ? Math.min(100, Math.round(ticksSince / TICKS_PER_MONTH * 100)) : 0;
+  const net = pnl.net;
+  const netCls = net >= 0 ? 'pnl-income' : 'pnl-expense';
+  const body = document.getElementById('pnlBody');
+  if (!body) return;
+  body.innerHTML =
+    '<div class="pnl-progress">Month ' + pct + '% complete</div>' +
+    '<div class="pnl-rows">' +
+    '<div class="pnl-row"><span class="pnl-label">Loan Interest</span><span class="pnl-value pnl-income">' + pnlSigned(pnl.loanInterest) + '</span></div>' +
+    '<div class="pnl-row"><span class="pnl-label">Reserve Interest</span><span class="pnl-value pnl-income">' + pnlSigned(pnl.reserveInterest) + '</span></div>' +
+    '<div class="pnl-row"><span class="pnl-label">Deposit Interest</span><span class="pnl-value pnl-expense">' + pnlSigned(-pnl.depositInterest) + '</span></div>' +
+    '<div class="pnl-row"><span class="pnl-label">CB Interest</span><span class="pnl-value pnl-expense">' + pnlSigned(-pnl.cbInterest) + '</span></div>' +
+    '<div class="pnl-row"><span class="pnl-label">Defaults</span><span class="pnl-value pnl-expense">' + pnlSigned(-pnl.defaults) + '</span></div>' +
+    '<div class="pnl-divider"></div>' +
+    '<div class="pnl-row pnl-total"><span class="pnl-label">Net P&amp;L</span><span class="pnl-value ' + netCls + '">' + pnlSigned(net) + '</span></div>' +
+    '</div>';
 }
 
 export function updateLoanApps() {

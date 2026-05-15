@@ -17,6 +17,9 @@ export const DEPO_RATE_MAX = 10;
 export const DEPO_RATE_STEP = 0.25;
 
 export const LOAN_EXPIRY_TICKS = 24;
+export const TICKS_PER_MONTH = 730;
+export const DEPO_STABILITY_PROB = 0.002;
+export const DEPO_STABILITY_RATE = 0.0005;
 
 export const INITIAL = {
   tick: 0,
@@ -44,7 +47,9 @@ export const INITIAL = {
   defaultAmounts: [],
   autoAcceptThreshold: 0,
   autoCbBorrowing: true,
-  weightedLoanRate: 5.50
+  weightedLoanRate: 5.50,
+  depositStabilityThreshold: 0,
+  pnl: { loanInterest: 0, depositInterest: 0, reserveInterest: 0, cbInterest: 0, defaults: 0, net: 0, lastResetTick: 0, lastTotal: null }
 };
 
 export const REGIME_MULTIPLIERS = { boom: 0.5, normal: 1, recession: 2.5 };

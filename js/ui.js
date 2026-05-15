@@ -1,6 +1,6 @@
 import { getState } from './state.js';
 import { reserveRatio, equity, totalAssets, computeNim, trailingNpl, computeDefaultRate } from './mechanics.js';
-import { fmtDollar, fmtPct, escapeHtml, gameDateStr, quarterStr } from './utils.js';
+import { fmtDollar, fmtPct, escapeHtml, gameDateStr, quarterStr, fmtTicks } from './utils.js';
 import { TICKS_PER_MONTH, TICKS_PER_YEAR, HISTORY_MAX, LOAN_DEFAULT_DURATION } from './constants.js';
 
 export function updateUI() {
@@ -59,7 +59,8 @@ export function updateUI() {
 
 export function updateEventLog() {
   const s = getState();
-  const container = document.getElementById('eventLog');
+  const container = document.querySelector('#eventLog .event-log-content');
+  if (!container) return;
   if (s.eventLog.length === 0) {
     container.innerHTML = '<div class="events-empty">Waiting for events…</div>';
     return;
@@ -184,10 +185,10 @@ export function updateAcceptedLoans() {
     html += '<span class="al-status ' + statusCls + '">' + statusLabel + '</span>';
     if (lr.status === 'active') {
       if (lr.durationTicks != null) {
-        const months = Math.round(lr.durationTicks / TICKS_PER_MONTH);
+        const totalMonths = Math.round(lr.durationTicks / TICKS_PER_MONTH);
         const remain = Math.max(0, lr.durationTicks - (s.tick - lr.createdAt));
-        html += '<span class="al-dur">' + months + 'mo</span>';
-        html += '<span class="al-remain">' + remain.toLocaleString() + ' ticks</span>';
+        html += '<span class="al-dur">' + totalMonths + 'mo</span>';
+        html += '<span class="al-remain">' + fmtTicks(remain) + '</span>';
       } else {
         html += '<span class="al-dur">∞</span>';
         html += '<span class="al-remain">No maturity</span>';

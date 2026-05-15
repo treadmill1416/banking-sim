@@ -1,4 +1,4 @@
-import { TICKS_PER_QUARTER, TICKS_PER_YEAR } from './constants.js';
+import { TICKS_PER_QUARTER, TICKS_PER_YEAR, TICKS_PER_MONTH } from './constants.js';
 
 export function fmtDollar(n) {
   if (n === undefined || n === null || isNaN(n)) return '—';
@@ -16,6 +16,19 @@ export function fmtDollar(n) {
 export function fmtPct(n) {
   if (n === undefined || n === null || isNaN(n)) return '—';
   return n.toFixed(2) + '%';
+}
+
+export function fmtTicks(ticks) {
+  if (ticks == null || ticks < 0) return '—';
+  const y = Math.floor(ticks / TICKS_PER_YEAR);
+  const rem = ticks % TICKS_PER_YEAR;
+  const mo = Math.floor(rem / TICKS_PER_MONTH);
+  const d = Math.floor((rem % TICKS_PER_MONTH) / 24);
+  const parts = [];
+  if (y > 0) parts.push(y + 'y');
+  if (mo > 0) parts.push(mo + 'mo');
+  if (d > 0 || parts.length === 0) parts.push(d + 'd');
+  return parts.join(' ');
 }
 
 export function escapeHtml(s) {

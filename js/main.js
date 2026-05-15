@@ -208,6 +208,19 @@ function bindEvents() {
   });
 }
 
+function initCollapsible() {
+  document.querySelectorAll('.card h2').forEach(h2 => {
+    const btn = document.createElement('button');
+    btn.className = 'collapse-btn';
+    btn.textContent = '−';
+    btn.addEventListener('click', () => {
+      h2.parentElement.classList.toggle('collapsed');
+      btn.textContent = h2.parentElement.classList.contains('collapsed') ? '+' : '−';
+    });
+    h2.prepend(btn);
+  });
+}
+
 function init() {
   if (!load()) {
     setState(createInitialState());
@@ -234,6 +247,7 @@ function init() {
   if (s.paused) document.getElementById('pauseBtn').textContent = '▶';
   document.getElementById('autoAcceptSlider').value = s.autoAcceptThreshold;
   document.getElementById('autoCbCheckbox').checked = s.autoCbBorrowing;
+  initCollapsible();
   bindEvents();
   initAdmin();
   updateAll();

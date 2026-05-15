@@ -100,12 +100,13 @@ input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;bac
 .loan-apps-list::-webkit-scrollbar{width:6px}
 .loan-apps-list::-webkit-scrollbar-track{background:#0d1117}
 .loan-apps-list::-webkit-scrollbar-thumb{background:#30363d;border-radius:3px}
-.la-entry{display:flex;align-items:center;justify-content:space-between;padding:6px 8px;border:1px solid #21262d;border-radius:4px;margin-bottom:4px;background:#0d1117}
-.la-info{display:flex;flex-direction:column;gap:1px}
-.la-amount{font-size:14px;font-weight:600;font-family:'SF Mono','Cascadia Code','Consolas',monospace;color:#f0f6fc}
-.la-prob{font-size:11px;color:#8b949e}
+.la-entry{display:flex;align-items:center;gap:6px;padding:5px 8px;border:1px solid #21262d;border-radius:4px;margin-bottom:4px;background:#0d1117;font-size:12px}
+.la-id{font-size:10px;color:#8b949e;font-weight:600;font-family:'SF Mono','Cascadia Code','Consolas',monospace;min-width:36px}
+.la-amount{font-size:12px;font-weight:600;font-family:'SF Mono','Cascadia Code','Consolas',monospace;color:#f0f6fc;min-width:50px}
+.la-interest{font-size:11px;font-weight:600;color:#3fb950;font-family:'SF Mono','Cascadia Code','Consolas',monospace;min-width:55px;white-space:nowrap}
+.la-prob{font-size:10px;color:#8b949e;min-width:36px;white-space:nowrap}
 .la-btns{display:flex;gap:4px;flex-shrink:0;align-items:center}
-.rate-input{width:60px;background:#0d1117;border:1px solid #30363d;border-radius:3px;padding:2px 4px;color:#c9d1d9;font-size:11px;font-family:'SF Mono','Cascadia Code','Consolas',monospace;text-align:center}
+.rate-input{width:50px;background:#0d1117;border:1px solid #30363d;border-radius:3px;padding:2px 4px;color:#c9d1d9;font-size:11px;font-family:'SF Mono','Cascadia Code','Consolas',monospace;text-align:center;flex-shrink:0}
 .rate-input:focus{outline:none;border-color:#58a6ff}
 .config-pane{margin-bottom:12px}
 .cfg-row{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:#c9d1d9;padding:4px 0}

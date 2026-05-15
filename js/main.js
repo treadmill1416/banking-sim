@@ -2,6 +2,7 @@ import { getState, setState, createInitialState, load, save, reset as resetState
 import { accrueInterest, processDefaults, checkReserves, expireOldLoans, reserveRatio, computeNim, equity, updatePnl, tryDepositStability } from './mechanics.js';
 import { tryDepositFlow, tryLoanRequest, tryEcbChange, tryRegimeChange } from './events.js';
 import { approveLoan, rejectLoan, cbBorrow, cbRepay } from './actions.js';
+import { fmtDollar } from './utils.js';
 import { updateUI, updateEventLog, updateLoanApps, updatePnlDisplay } from './ui.js';
 import { updateCharts } from './charts.js';
 import { HISTORY_MAX } from './constants.js';
@@ -138,6 +139,17 @@ function bindEvents() {
   document.getElementById('pauseBtn').addEventListener('click', togglePause);
   document.getElementById('resetBtn').addEventListener('click', resetGame);
   document.getElementById('loanAppsList').addEventListener('click', onLoanAppsClick);
+  document.getElementById('loanAppsList').addEventListener('input', function (e) {
+    const input = e.target.closest('.rate-input');
+    if (!input) return;
+    const entry = input.closest('.la-entry');
+    const amount = parseFloat(entry.dataset.amount);
+    const rate = parseFloat(input.value);
+    if (amount && rate) {
+      const interest = amount * rate / 100;
+      entry.querySelector('.la-interest').textContent = '+' + fmtDollar(interest).replace(/^\$/, '');
+    }
+  });
   document.getElementById('cbBorrowBtn').addEventListener('click', onCdBorrowClick);
   document.getElementById('cbRepayBtn').addEventListener('click', onCdRepayClick);
 

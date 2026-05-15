@@ -108,16 +108,17 @@ export function updateLoanApps() {
   }
   let html = '';
   for (const e of pending) {
-    html += '<div class="la-entry">';
-    html += '<div class="la-info">';
+    const rate = e.proposedRate || s.loanRate;
+    const interest = e.loanAmount * rate / 100;
+    html += '<div class="la-entry" data-amount="' + e.loanAmount + '">';
+    html += '<span class="la-id">' + e.loanRequestId + '</span>';
     html += '<span class="la-amount">' + fmtDollar(e.loanAmount) + '</span>';
-    html += '<span class="la-prob">Default risk: ' + e.defaultProb.toFixed(1) + '%</span>';
-    html += '</div>';
-    html += '<div class="la-btns">';
-    html += '<input type="number" class="rate-input" data-id="' + e.loanRequestId + '" value="' + (e.proposedRate || s.loanRate).toFixed(2) + '" step="0.25" min="0.5" max="20">';
+    html += '<span class="la-interest">+' + fmtDollar(interest).replace(/^\$/, '') + '</span>';
+    html += '<span class="la-prob">' + e.defaultProb.toFixed(1) + '%</span>';
+    html += '<input type="number" class="rate-input" data-id="' + e.loanRequestId + '" value="' + rate.toFixed(2) + '" step="0.25" min="0.5" max="20">';
     html += '<button class="event-btn approve" data-action="approve" data-id="' + e.loanRequestId + '">APPROVE</button>';
     html += '<button class="event-btn reject" data-action="reject" data-id="' + e.loanRequestId + '">REJECT</button>';
-    html += '</div></div>';
+    html += '</div>';
   }
   container.innerHTML = html;
 }

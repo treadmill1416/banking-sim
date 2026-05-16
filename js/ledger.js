@@ -16,6 +16,7 @@ export const ACCOUNT_TYPES = {
   cbInterestExpense: 'expense',
   defaultLosses: 'expense',
   salaryExpense: 'expense',
+  insuranceExpense: 'expense',
 };
 
 /** Initialize the ledger: reset journal, balances, and post opening entries from the flat state fields.
@@ -53,6 +54,7 @@ function snapshotIncomeAccounts(s) {
     cbInterestExpense: b.cbInterestExpense || 0,
     defaultLosses: b.defaultLosses || 0,
     salaryExpense: b.salaryExpense || 0,
+    insuranceExpense: b.insuranceExpense || 0,
     tick: s.tick,
   };
 }
@@ -162,6 +164,7 @@ export function getCurrentMonthPnl(s) {
     cbInterestExpense: (b.cbInterestExpense || 0) - ms.cbInterestExpense,
     defaultLosses: (b.defaultLosses || 0) - ms.defaultLosses,
     salaryExpense: (b.salaryExpense || 0) - ms.salaryExpense,
+    insuranceExpense: (b.insuranceExpense || 0) - ms.insuranceExpense,
   };
 }
 
@@ -178,6 +181,7 @@ export function updateLedgerPnl(s) {
       cbInterestExpense: current.cbInterestExpense - s.ledgerMonthStart.cbInterestExpense,
       defaultLosses: current.defaultLosses - s.ledgerMonthStart.defaultLosses,
       salaryExpense: current.salaryExpense - s.ledgerMonthStart.salaryExpense,
+      insuranceExpense: current.insuranceExpense - s.ledgerMonthStart.insuranceExpense,
     };
     s.ledgerMonthStart = current;
   }

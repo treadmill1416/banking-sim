@@ -1,4 +1,4 @@
-import { TICKS_PER_YEAR, TICKS_PER_MONTH, RESERVE_RATIO_TARGET, NPL_WINDOW, DEFAULT_WINDOW, REGIME_MULTIPLIERS, DEFAULT_ANNUAL_RATE, PROB, LOAN_EXPIRY_TICKS, LOAN_DEFAULT_DURATION, DEPO_STABILITY_PROB, DEPO_STABILITY_RATE, LOANS_PER_OFFICER, SALARY_PER_OFFICER } from './constants.js';
+import { TICKS_PER_YEAR, TICKS_PER_MONTH, RESERVE_RATIO_TARGET, NPL_WINDOW, DEFAULT_WINDOW, REGIME_MULTIPLIERS, DEFAULT_ANNUAL_RATE, PROB, LOAN_EXPIRY_TICKS, LOAN_DEFAULT_DURATION, DEPO_STABILITY_PROB, DEPO_STABILITY_RATE, LOANS_PER_OFFICER, SALARY_PER_OFFICER, INSURANCE_ANNUAL_PREMIUM } from './constants.js';
 import { addEvent } from './state.js';
 import { fmtDollar } from './utils.js';
 import { postJournal, getBalance, getEquity, getNetIncome } from './ledger.js';
@@ -78,11 +78,34 @@ export function accrueInterest(s) {
 }
 
 /** Check deposit rate competitiveness. If spread is below the stability threshold, trigger deposit outflows proportional to severity and regime.
+ *  Insurance coverage raises the effective threshold. Bank runs amplify probability and severity.
  *  @param {object} s */
 export function tryDepositStability(s) {
+  // Bank run amplification
+  if (s.bankRunActive) {
+    const spread = s.depositRate - s.ecbMroRate;
+    const severity = Math.abs(spread - s.depositStabilityThreshold) + 2;
+    const prob = Math.min(0.5, DEPO_STABILITY_PROB * severity * REGIME_MULTIPLIERS[s.regime] * 5);
+    if (Math.random() >= prob) return;
+    const deposits = getBalance(s, 'deposits');
+    const pct = Math.min(0.1, DEPO_STABILITY_RATE * severity * REGIME_MULTIPLIERS[s.regime] * 5);
+    const outflow = deposits * pct * (0.5 + Math.random());
+    if (outflow < 1000) return;
+    const actual = Math.min(outflow, deposits);
+    postJournal(s, [
+      { account: 'deposits', debit: actual },
+      { account: 'cash', credit: actual },
+    ], 'Deposit flight (bank run)');
+    addEvent(s, 'deposit', 'Deposit flight during bank run: ' + fmtDollar(-actual), 'event-expense');
+    return;
+  }
+
+  // Normal stability check
+  const insuranceBuffer = (s.depositInsurancePct / 100) * 0.5;
+  const effectiveThreshold = s.depositStabilityThreshold + insuranceBuffer;
   const spread = s.depositRate - s.ecbMroRate;
-  if (spread >= s.depositStabilityThreshold) return;
-  const severity = Math.abs(spread - s.depositStabilityThreshold);
+  if (spread >= effectiveThreshold) return;
+  const severity = Math.abs(spread - effectiveThreshold);
   const prob = Math.min(0.1, DEPO_STABILITY_PROB * severity * REGIME_MULTIPLIERS[s.regime]);
   if (Math.random() >= prob) return;
   const deposits = getBalance(s, 'deposits');
@@ -125,17 +148,29 @@ export function countActiveLoans(s) {
   return count;
 }
 
-/** Process monthly salary payments for all loan officers. Fires on month boundaries.
+/** Process monthly salary payments for all loan officers and deposit insurance premium. Fires on month boundaries.
  *  @param {object} s */
 export function processSalaries(s) {
   if (s.tick % TICKS_PER_MONTH !== 0) return;
   const totalSalary = s.numWorkers * SALARY_PER_OFFICER;
-  if (totalSalary === 0) return;
-  postJournal(s, [
-    { account: 'salaryExpense', debit: totalSalary },
-    { account: 'cash', credit: totalSalary },
-  ], 'Monthly salaries - ' + s.numWorkers + ' loan officers');
-  addEvent(s, 'hr', 'Paid salaries: ' + fmtDollar(totalSalary) + ' for ' + s.numWorkers + ' loan officer(s)', 'event-expense');
+  if (totalSalary > 0) {
+    postJournal(s, [
+      { account: 'salaryExpense', debit: totalSalary },
+      { account: 'cash', credit: totalSalary },
+    ], 'Monthly salaries - ' + s.numWorkers + ' loan officers');
+    addEvent(s, 'hr', 'Paid salaries: ' + fmtDollar(totalSalary) + ' for ' + s.numWorkers + ' loan officer(s)', 'event-expense');
+  }
+  if (s.depositInsurancePct > 0) {
+    const deposits = getBalance(s, 'deposits');
+    const premium = deposits * (s.depositInsurancePct / 100) * INSURANCE_ANNUAL_PREMIUM / 12;
+    if (premium > 1) {
+      postJournal(s, [
+        { account: 'insuranceExpense', debit: premium },
+        { account: 'cash', credit: premium },
+      ], 'Deposit insurance premium');
+      addEvent(s, 'hr', 'Deposit insurance premium: ' + fmtDollar(premium), 'event-expense');
+    }
+  }
 }
 
 /** Process a loan approval: create loan record, post journal entries (credit creation — deposits created ex nihilo), collect first payment, update weighted average rate, and check reserves.

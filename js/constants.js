@@ -25,6 +25,8 @@ export const DEPO_STABILITY_PROB = 0.002;
 export const DEPO_STABILITY_RATE = 0.0005;
 export const LOANS_PER_OFFICER = 10;
 export const SALARY_PER_OFFICER = 1000;
+export const APPLICATIONS_PER_OFFICER = 4;
+export const INSURANCE_ANNUAL_PREMIUM = 0.005;
 
 export const INITIAL = {
   tick: 0,
@@ -50,6 +52,9 @@ export const INITIAL = {
   defaultTicks: [],
   defaultAmounts: [],
   debug: true,
+  depositInsurancePct: 0,
+  bankRunActive: false,
+  bankRunStartTick: 0,
   autoAcceptThreshold: 0,
   autoCbBorrowing: true,
   weightedLoanRate: 5.50,

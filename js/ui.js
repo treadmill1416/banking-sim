@@ -48,6 +48,8 @@ export function updateUI() {
 
   document.getElementById('loanRateDisplay').textContent = s.loanRate.toFixed(2) + '%';
   document.getElementById('depositRateDisplay').textContent = s.depositRate.toFixed(2) + '%';
+  const insEl = document.getElementById('insuranceDisplay');
+  if (insEl) insEl.textContent = s.depositInsurancePct + '%';
 
   document.getElementById('ecbMlf').textContent = 'MLF ' + s.ecbMlfRate.toFixed(2) + '%';
   document.getElementById('ecbMro').textContent = 'MRO ' + s.ecbMroRate.toFixed(2) + '%';
@@ -104,7 +106,7 @@ function pnlRow(label, value, cls) {
 
 /** Build a complete P&L section with all income/expense rows and net total. */
 function pnlSection(title, p, cls) {
-  const net = (p.interestIncome || 0) + (p.reserveInterestIncome || 0) - (p.interestExpense || 0) - (p.cbInterestExpense || 0) - (p.defaultLosses || 0) - (p.salaryExpense || 0);
+  const net = (p.interestIncome || 0) + (p.reserveInterestIncome || 0) - (p.interestExpense || 0) - (p.cbInterestExpense || 0) - (p.defaultLosses || 0) - (p.salaryExpense || 0) - (p.insuranceExpense || 0);
   const netCls = net >= 0 ? 'pnl-income' : 'pnl-expense';
   return '<div class="' + cls + '">' + title + '</div>' +
     '<div class="pnl-rows">' +
@@ -113,6 +115,7 @@ function pnlSection(title, p, cls) {
     pnlRow('Deposit Interest', pnlSigned(-(p.interestExpense || 0)), 'pnl-expense') +
     pnlRow('CB Interest', pnlSigned(-(p.cbInterestExpense || 0)), 'pnl-expense') +
     pnlRow('Salaries', pnlSigned(-(p.salaryExpense || 0)), 'pnl-expense') +
+    pnlRow('Insurance', pnlSigned(-(p.insuranceExpense || 0)), 'pnl-expense') +
     pnlRow('Defaults', pnlSigned(-(p.defaultLosses || 0)), 'pnl-expense') +
     '<div class="pnl-divider"></div>' +
     pnlRow('Net P&L', pnlSigned(net), netCls) +
@@ -164,6 +167,7 @@ export function updateLedgerDisplay() {
     { label: 'Interest Expense', acct: 'interestExpense' },
     { label: 'CB Interest Expense', acct: 'cbInterestExpense' },
     { label: 'Default Losses', acct: 'defaultLosses' },
+    { label: 'Insurance Expense', acct: 'insuranceExpense' },
   ];
   const plRows = plAccounts.map(a =>
     '<div class="lr-row"><span class="lr-label">' + a.label + '</span><span class="lr-val">' + fmtDollar(b[a.acct] || 0) + '</span></div>'
@@ -369,6 +373,7 @@ export function updateAccountingTab() {
       acctRow('Interest Expense', b.interestExpense || 0) +
       acctRow('CB Interest Expense', b.cbInterestExpense || 0) +
       acctRow('Salary Expense', b.salaryExpense || 0) +
+      acctRow('Insurance Expense', b.insuranceExpense || 0) +
       acctRow('Default Losses', b.defaultLosses || 0) +
     '</div>';
   }
@@ -389,6 +394,7 @@ export function updateAccountingTab() {
       { label: 'CB Interest Expense', acct: 'cbInterestExpense' },
       { label: 'Default Losses', acct: 'defaultLosses' },
       { label: 'Salary Expense', acct: 'salaryExpense' },
+      { label: 'Insurance Expense', acct: 'insuranceExpense' },
     ];
     let totalDr = 0, totalCr = 0;
     let rows = '';
@@ -415,7 +421,7 @@ export function updateAccountingTab() {
     const cur = getCurrentMonthPnl(s);
     if (cur) {
       const income = (cur.interestIncome || 0) + (cur.reserveInterestIncome || 0);
-      const expenses = (cur.interestExpense || 0) + (cur.cbInterestExpense || 0) + (cur.salaryExpense || 0) + (cur.defaultLosses || 0);
+      const expenses = (cur.interestExpense || 0) + (cur.cbInterestExpense || 0) + (cur.salaryExpense || 0) + (cur.insuranceExpense || 0) + (cur.defaultLosses || 0);
       isBody.innerHTML = '<div class="acct-body-inner">' +
         '<div class="acct-section">Income</div>' +
         acctRow('Interest Income', cur.interestIncome || 0) +
@@ -425,6 +431,7 @@ export function updateAccountingTab() {
         acctRow('Interest Expense', cur.interestExpense || 0) +
         acctRow('CB Interest Expense', cur.cbInterestExpense || 0) +
         acctRow('Salary Expense', cur.salaryExpense || 0) +
+        acctRow('Insurance Expense', cur.insuranceExpense || 0) +
         acctRow('Default Losses', cur.defaultLosses || 0) +
         acctRow('Total Expenses', expenses, 'total') +
         '<div class="acct-section">' +

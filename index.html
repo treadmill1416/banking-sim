@@ -31,6 +31,7 @@
 <div class="debug-bar" id="debugBar" style="display:none">
   <div class="debug-equity" id="debugEquity">—</div>
   <button class="debug-btn" id="defaultAllLoansBtn">Default All Loans</button>
+  <button class="debug-btn" id="startBankRunBtn">Start Bank Run</button>
 </div>
 
 <!-- Tab bar: Dashboard / Accounting -->
@@ -147,6 +148,12 @@
         <div class="slider-label"><span>Auto-accept Risk Threshold</span><span class="rate-val" id="autoAcceptDisplay">0.00%</span></div>
         <input type="range" id="autoAcceptSlider" min="0" max="25" step="0.5" value="0">
         <div class="slider-hint">Loan requests with default risk at or below this threshold are auto-approved at the standard rate.</div>
+      </div>
+      <div class="policies-divider"></div>
+      <div class="slider-group">
+        <div class="slider-label"><span>Deposit Insurance Coverage</span><span class="rate-val" id="insuranceDisplay">0%</span></div>
+        <input type="range" id="insuranceSlider" min="0" max="100" step="5" value="0">
+        <div class="slider-hint">Insured deposits attract more inflow and resist flight. Premium charged monthly at 0.5% annual rate on covered deposits.</div>
       </div>
     </div>
   </div>

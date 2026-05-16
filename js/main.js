@@ -266,6 +266,12 @@ function bindEvents() {
     save();
   });
 
+  document.getElementById('insuranceSlider').addEventListener('input', function () {
+    getState().depositInsurancePct = parseFloat(this.value);
+    document.getElementById('insuranceDisplay').textContent = getState().depositInsurancePct + '%';
+    updateAll();
+  });
+
   document.getElementById('autoCbCheckbox').addEventListener('change', function () {
     getState().autoCbBorrowing = this.checked;
     save();
@@ -327,6 +333,8 @@ function init() {
   document.querySelector('.speed-btn[data-speed="' + s.speed + '"]')?.classList.add('active');
   if (s.paused) document.getElementById('pauseBtn').textContent = '▶';
   document.getElementById('autoAcceptSlider').value = s.autoAcceptThreshold;
+  document.getElementById('insuranceSlider').value = s.depositInsurancePct;
+  document.getElementById('insuranceDisplay').textContent = s.depositInsurancePct + '%';
   document.getElementById('autoCbCheckbox').checked = s.autoCbBorrowing;
   initCollapsible();
   bindEvents();

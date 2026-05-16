@@ -74,8 +74,13 @@ export function updateEventLog() {
   if (!container) return;
   if (s.eventLog.length === 0) {
     container.innerHTML = '<div class="events-empty">Waiting for events…</div>';
+    updateEventLog._lastLen = 0;
     return;
   }
+  if (s.eventLog.length === updateEventLog._lastLen) return;
+  updateEventLog._lastLen = s.eventLog.length;
+  const scrollParent = container.parentElement;
+  const prevScroll = scrollParent ? scrollParent.scrollTop : 0;
   let html = '';
   for (const e of s.eventLog) {
     html += '<div class="event-entry">';
@@ -87,6 +92,7 @@ export function updateEventLog() {
     html += '</span></div>';
   }
   container.innerHTML = html;
+  if (scrollParent) scrollParent.scrollTop = prevScroll;
 }
 
 /** Format a signed dollar value for P&L display (e.g. "+$1.5M" or "−$200K").
@@ -204,6 +210,12 @@ export function updateLoanApps() {
   for (const e of s.eventLog) {
     if (e.type === 'loan_request' && e.approved === undefined) pending.push(e);
   }
+  const key = pending.length + ':' + pending.map(e => e.loanRequestId + ':' + e.approved).join('|');
+  if (key === updateLoanApps._lastKey && container.innerHTML !== '') return;
+  updateLoanApps._lastKey = key;
+  // Preserve slider values across re-render
+  const sliderVals = {};
+  container.querySelectorAll('.app-rate-slider').forEach(sl => { sliderVals[sl.dataset.id] = sl.value; });
   if (pending.length === 0) {
     container.innerHTML = '<div class="events-empty">No pending loan applications.</div>';
     return;
@@ -215,7 +227,8 @@ export function updateLoanApps() {
     html += '<div class="hr-warn">⚠ All loan officers are occupied (' + active + '/' + capacity + '). Hire more to process additional loans.</div>';
   }
   for (const e of pending) {
-    const rate = s.loanRate;
+    const savedRate = sliderVals[e.loanRequestId];
+    const rate = savedRate !== undefined ? parseFloat(savedRate) : s.loanRate;
     const interest = e.loanAmount * rate / 100;
     const months = e.durationMonths || 12;
     const maturityTick = s.tick + months * TICKS_PER_MONTH;
@@ -252,6 +265,17 @@ export function updateAcceptedLoans() {
   const s = getState();
   const container = document.getElementById('acceptedLoansBody');
   if (!container) return;
+  let a = 0, r = 0, d = 0;
+  for (const lr of s.loanRecords) {
+    if (lr.status === 'active') a++;
+    else if (lr.status === 'repaid') r++;
+    else if (lr.status === 'defaulted') d++;
+  }
+  const fp = s.loanRecords.length + ':' + a + ':' + r + ':' + d;
+  if (fp === updateAcceptedLoans._lastFp && container.innerHTML !== '') return;
+  updateAcceptedLoans._lastFp = fp;
+  const scrollParent = container.parentElement;
+  const prevScroll = scrollParent ? scrollParent.scrollTop : 0;
   const sorted = s.loanRecords.slice().sort((a, b) => {
     const order = { active: 0, repaid: 1, defaulted: 2 };
     if (order[a.status] !== order[b.status]) return order[a.status] - order[b.status];
@@ -289,6 +313,7 @@ export function updateAcceptedLoans() {
     html = '<div class="events-empty">No loans.</div>';
   }
   container.innerHTML = html;
+  if (scrollParent) scrollParent.scrollTop = prevScroll;
   drawDefaultRateChart(s);
 }
 

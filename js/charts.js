@@ -58,7 +58,7 @@ function drawChart(svgId, data, color, label, formatter) {
 /** Read state history arrays and render all three charts (reserve ratio, NIM, equity). */
 export function updateCharts() {
   const s = getState();
-  drawChart('chartReserves', s.historyRR, '#58a6ff', 'Reserve Ratio', v => v.toFixed(2) + '%');
-  drawChart('chartNim', s.historyNIM, '#3fb950', 'Net Interest Margin', v => v.toFixed(2) + '%');
-  drawChart('chartEquity', s.historyEQ, '#d29922', 'Equity', v => '$' + (v >= 0 ? v.toFixed(0) : '-' + Math.abs(v).toFixed(0)));
+  drawChart('chartReserves', s.historyRR, '#0071d4', 'Reserve Ratio', v => v.toFixed(2) + '%');
+  drawChart('chartNim', s.historyNIM, '#2d8a4e', 'Net Interest Margin', v => v.toFixed(2) + '%');
+  drawChart('chartEquity', s.historyEQ, '#cc0000', 'Equity', v => '$' + (v >= 0 ? v.toFixed(0) : '-' + Math.abs(v).toFixed(0)));
 }

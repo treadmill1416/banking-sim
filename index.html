@@ -30,6 +30,7 @@
 <!-- Debug bar: testing actions (visible only when debug is enabled) -->
 <div class="debug-bar" id="debugBar" style="display:none">
   <div class="debug-equity" id="debugEquity">—</div>
+  <div class="debug-equity" id="debugMro">—</div>
   <button class="debug-btn" id="defaultAllLoansBtn">Default All Loans</button>
   <button class="debug-btn" id="startBankRunBtn">Start Bank Run</button>
 </div>
@@ -66,14 +67,14 @@
         <div class="bs-header">Liabilities</div>
         <div class="bs-row"><span class="label">Deposits</span><span class="value" id="bsDeposits">—</span></div>
         <div class="bs-row"><span class="label">CB Borrowing</span><span class="value" id="bsCbBorrowing">—</span></div>
-        <div class="bs-row"><span class="label">Equity</span><span class="value" id="bsEquity" style="color:#3fb950">—</span></div>
+        <div class="bs-row"><span class="label">Equity</span>        <span class="value" id="bsEquity" style="color:#2d8a4e">—</span></div>
         <div class="bs-row total"><span class="label">Total</span><span class="value" id="bsLiabilitiesTotal">—</span></div>
       </div>
     </div>
   </div>
 
   <div class="card accepted-loans">
-    <h2>Accepted Loans <span id="acceptedLoanCount" style="font-size:11px;font-weight:400;text-transform:none;color:#8b949e"></span></h2>
+    <h2>Accepted Loans <span id="acceptedLoanCount" style="font-size:11px;font-weight:400;text-transform:none;color:#9b9b9b"></span></h2>
     <svg id="defaultRateChart" style="width:100%;height:80px;margin-bottom:6px"></svg>
     <div id="acceptedLoansBody"><div class="events-empty">Loading…</div></div>
   </div>

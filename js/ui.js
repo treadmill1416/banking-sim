@@ -29,7 +29,7 @@ export function updateUI() {
   const eq = equity(s);
   const eqEl = document.getElementById('bsEquity');
   eqEl.textContent = fmtDollar(eq);
-  eqEl.style.color = eq >= 0 ? '#3fb950' : '#f85149';
+  eqEl.style.color = eq >= 0 ? '#2d8a4e' : '#cc0000';
   document.getElementById('bsLiabilitiesTotal').textContent = fmtDollar(deposits + cb + eq);
 
   const rr = reserveRatio(s);
@@ -38,13 +38,13 @@ export function updateUI() {
 
   const rrEl = document.getElementById('metricReserveRatio');
   rrEl.textContent = fmtPct(rr);
-  rrEl.style.color = rr >= 1 ? '#3fb950' : '#f85149';
+  rrEl.style.color = rr >= 1 ? '#2d8a4e' : '#cc0000';
   document.getElementById('metricEquity').textContent = fmtDollar(eq);
-  document.getElementById('metricEquity').style.color = eq >= 0 ? '#c9d1d9' : '#f85149';
+  document.getElementById('metricEquity').style.color = eq >= 0 ? '#292929' : '#cc0000';
   document.getElementById('metricNim').textContent = fmtPct(nim);
-  document.getElementById('metricNim').style.color = nim >= 0 ? '#3fb950' : '#f85149';
+  document.getElementById('metricNim').style.color = nim >= 0 ? '#2d8a4e' : '#cc0000';
   document.getElementById('metricNpl').textContent = fmtPct(npl);
-  document.getElementById('metricNpl').style.color = npl < 2 ? '#3fb950' : npl < 5 ? '#d29922' : '#f85149';
+  document.getElementById('metricNpl').style.color = npl < 2 ? '#2d8a4e' : npl < 5 ? '#d97706' : '#cc0000';
 
   document.getElementById('loanRateDisplay').textContent = s.loanRate.toFixed(2) + '%';
   document.getElementById('depositRateDisplay').textContent = s.depositRate.toFixed(2) + '%';
@@ -356,9 +356,9 @@ function drawDefaultRateChart(s) {
     const y = pt + (1 - (visible[i] - yMin) / yRng) * ih;
     path += (i === 0 ? 'M' : 'L') + x.toFixed(1) + ',' + y.toFixed(1);
   }
-  html += '<path d="' + path + '" class="chart-line" stroke="#f85149"/>';
+  html += '<path d="' + path + '" class="chart-line" stroke="#cc0000"/>';
   const lastVal = visible[visible.length - 1];
-  html += '<text x="' + (pl + iw - 2) + '" y="' + (pt + 10) + '" text-anchor="end" class="chart-value" fill="#f85149">' + lastVal.toFixed(1) + '%</text>';
+  html += '<text x="' + (pl + iw - 2) + '" y="' + (pt + 10) + '" text-anchor="end" class="chart-value" fill="#cc0000">' + lastVal.toFixed(1) + '%</text>';
   html += '<text x="' + (pl + iw / 2) + '" y="' + (h - 2) + '" text-anchor="middle" class="chart-title">Default Rate (rolling annual)</text>';
   html += '</svg>';
   svg.innerHTML = html;

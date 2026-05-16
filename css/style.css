@@ -1,3 +1,4 @@
+/* === Reset & Base === */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;background:#0d1117;color:#c9d1d9;min-height:100vh;overflow-x:hidden}
 .app{max-width:1100px;margin:0 auto;padding:12px 16px}
@@ -58,6 +59,8 @@ input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;bac
 .card.collapsed > h2 .collapse-btn{color:#8b949e;transform:rotate(-90deg)}
 .collapse-btn{background:none;border:none;color:#8b949e;cursor:pointer;font-size:16px;line-height:1;padding:0 4px;margin-right:4px;font-family:monospace;transition:transform .15s,color .15s;vertical-align:middle}
 .collapse-btn:hover{color:#f0f6fc}
+
+/* === Tab Navigation === */
 .tab-bar{display:flex;gap:0;margin-bottom:12px;border-bottom:1px solid #30363d}
 .tab-btn{padding:7px 18px;font-size:13px;font-weight:600;border:1px solid transparent;border-bottom:none;border-radius:4px 4px 0 0;background:transparent;color:#8b949e;cursor:pointer;font-family:inherit;transition:all .15s}
 .tab-btn:hover{color:#c9d1d9;background:#161b22}
@@ -65,6 +68,7 @@ input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;bac
 .tab-panel{display:none}
 .tab-panel.active{display:block}
 
+/* === Accounting Tab === */
 .acct-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media(max-width:800px){.acct-grid{grid-template-columns:1fr}}
 .acct-card{margin-bottom:0}
@@ -93,6 +97,7 @@ input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;bac
 .jr-line .jr-acct{color:#d29922}
 .jr-line .jr-amt{min-width:70px;text-align:right}
 
+/* === Legacy Ledger Display (Dashboard tab) === */
 .ledger-card{margin-bottom:12px}
 .ledger-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:12px}
 @media(max-width:700px){.ledger-grid{grid-template-columns:1fr}}
@@ -107,6 +112,7 @@ input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;bac
 .je-desc{color:#c9d1d9;flex:1;min-width:80px}
 .je-parts{color:#d29922;width:100%;font-size:10px;padding-left:48px}
 
+/* === Event Log === */
 .event-log{padding:0;max-height:none;overflow-y:visible}
 .event-log h2{padding:12px 12px 0}
 .event-log .event-log-content{max-height:200px;overflow-y:auto;padding:0 12px 8px}
@@ -129,6 +135,8 @@ input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;bac
 .event-expense{color:#f85149}
 .event-info{color:#58a6ff}
 .event-warn{color:#d29922}
+
+/* === P&L Card === */
 .pnl-card{margin-bottom:12px}
 .pnl-progress{font-size:10px;color:#8b949e;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.3px}
 .pnl-progress-prev{color:#58a6ff;margin-top:0}
@@ -142,6 +150,8 @@ input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;bac
 .pnl-divider{margin:4px 0;border-top:1px solid #30363d}
 .pnl-row.pnl-total{padding-top:4px;font-size:14px}
 .pnl-row.pnl-total .pnl-label{color:#f0f6fc;font-weight:600}
+
+/* === Charts (reserve ratio, NIM, equity) === */
 .charts-section{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
 @media(max-width:700px){.charts-section{grid-template-columns:1fr}}
 .chart-card{background:#161b22;border:1px solid #30363d;border-radius:6px;padding:8px}
@@ -152,6 +162,8 @@ input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;bac
 .chart-grid{stroke:#21262d;stroke-width:1}
 .chart-line{fill:none;stroke-width:1.5}
 .events-empty{padding:12px 0;text-align:center;color:#8b949e;font-size:13px}
+
+/* === Loan Applications === */
 .loan-apps{margin-bottom:0}
 .loan-apps .aa-row{margin-bottom:10px}
 .loan-apps .loan-apps-list{max-height:340px;overflow-y:auto}
@@ -173,6 +185,8 @@ input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;bac
 .la-interest{font-size:13px;font-weight:600;color:#3fb950;font-family:'SF Mono','Cascadia Code','Consolas',monospace}
 .la-prob{font-size:12px;color:#d29922}
 .la-actions{display:flex;justify-content:flex-end;gap:6px;padding-top:4px;border-top:1px solid #21262d}
+
+/* === Config Panel === */
 .config-pane{margin-bottom:12px}
 .accepted-loans .al-entry{padding:6px 8px;border:1px solid #21262d;border-radius:4px;margin-bottom:4px;background:#0d1117;font-size:12px}
 .accepted-loans .al-entry.al-status-defaulted{border-color:#da363344}
@@ -194,7 +208,7 @@ input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;bac
 .cfg-row{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:#c9d1d9;padding:4px 0}
 .cfg-row input[type=checkbox]{width:16px;height:16px;accent-color:#58a6ff;cursor:pointer}
 
-/* Admin modal */
+/* === Admin Modal === */
 .admin-overlay{position:fixed;inset:0;background:#00000099;display:flex;align-items:center;justify-content:center;z-index:1000}
 .admin-modal{background:#161b22;border:1px solid #30363d;border-radius:8px;width:520px;max-width:94vw;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 8px 32px #00000066}
 .admin-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #30363d}

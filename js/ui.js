@@ -4,6 +4,9 @@ import { fmtDollar, fmtPct, escapeHtml, gameDateStr, quarterStr, fmtTicks } from
 import { TICKS_PER_MONTH, TICKS_PER_YEAR, HISTORY_MAX, LOAN_DEFAULT_DURATION } from './constants.js';
 import { getBalance, getNetIncome, getCurrentMonthPnl, ACCOUNT_TYPES } from './ledger.js';
 
+/** @module ui - All DOM rendering. Updates the dashboard (balance sheet, metrics, P&L, loan panels, event log) and accounting tab. */
+
+/** Main UI refresh: date, regime badge, balance sheet, metrics, rate displays, and loan counts. Called every tick. */
 export function updateUI() {
   const s = getState();
   document.getElementById('gameDate').textContent = gameDateStr(s.tick);
@@ -62,6 +65,7 @@ export function updateUI() {
   }
 }
 
+/** Render the scrollable event log, most recent first. Shows loan request default probabilities when pending. */
 export function updateEventLog() {
   const s = getState();
   const container = document.querySelector('#eventLog .event-log-content');
@@ -83,6 +87,9 @@ export function updateEventLog() {
   container.innerHTML = html;
 }
 
+/** Format a signed dollar value for P&L display (e.g. "+$1.5M" or "−$200K").
+ *  @param {number|undefined|null} n
+ *  @returns {string} */
 function pnlSigned(n) {
   if (n === undefined || n === null || isNaN(n)) return '—';
   if (Math.abs(n) < 0.5) return '$0';
@@ -90,10 +97,12 @@ function pnlSigned(n) {
   return n >= 0 ? '+' + abs : '−' + abs;
 }
 
+/** Build a single P&L row. */
 function pnlRow(label, value, cls) {
   return '<div class="pnl-row"><span class="pnl-label">' + label + '</span><span class="pnl-value ' + cls + '">' + value + '</span></div>';
 }
 
+/** Build a complete P&L section with all income/expense rows and net total. */
 function pnlSection(title, p, cls) {
   const net = (p.interestIncome || 0) + (p.reserveInterestIncome || 0) - (p.interestExpense || 0) - (p.cbInterestExpense || 0) - (p.defaultLosses || 0);
   const netCls = net >= 0 ? 'pnl-income' : 'pnl-expense';
@@ -109,6 +118,7 @@ function pnlSection(title, p, cls) {
     '</div>';
 }
 
+/** Render the Monthly P&L card showing last completed month and current month-to-date. */
 export function updatePnlDisplay() {
   const s = getState();
   const body = document.getElementById('pnlBody');
@@ -129,6 +139,7 @@ export function updatePnlDisplay() {
   body.innerHTML = html;
 }
 
+/** Render the legacy ledger display (Dashboard tab): balance sheet accounts, P&L accounts, and recent journal entries. */
 export function updateLedgerDisplay() {
   const s = getState();
   const body = document.getElementById('ledgerBody');
@@ -180,6 +191,7 @@ export function updateLedgerDisplay() {
     '</div>';
 }
 
+/** Render the Loan Applications panel with per-loan rate sliders, default probability, and approve/reject buttons. */
 export function updateLoanApps() {
   const s = getState();
   const container = document.getElementById('loanAppsList');
@@ -225,6 +237,7 @@ export function updateLoanApps() {
   container.innerHTML = html;
 }
 
+/** Render all accepted loan records sorted by status (active → repaid → defaulted), then by creation date. Includes progress bar and monthly payment info. */
 export function updateAcceptedLoans() {
   const s = getState();
   const container = document.getElementById('acceptedLoansBody');
@@ -269,6 +282,7 @@ export function updateAcceptedLoans() {
   drawDefaultRateChart(s);
 }
 
+/** Draw a mini SVG sparkline for the rolling annual default rate history. */
 function drawDefaultRateChart(s) {
   const svg = document.getElementById('defaultRateChart');
   if (!svg) return;
@@ -315,10 +329,12 @@ function drawDefaultRateChart(s) {
   svg.innerHTML = html;
 }
 
+/** Build a single accounting row. */
 function acctRow(label, value, cls) {
   return '<div class="acct-row' + (cls ? ' ' + cls : '') + '"><span class="acct-label">' + label + '</span><span>' + fmtDollar(value) + '</span></div>';
 }
 
+/** Render the full Accounting tab: Chart of Accounts, Trial Balance, Income Statement, and Journal Register. */
 export function updateAccountingTab() {
   const s = getState();
   const b = s.ledgerBalances;

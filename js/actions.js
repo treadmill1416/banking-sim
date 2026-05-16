@@ -4,6 +4,10 @@ import { checkReserves, processLoanApproval } from './mechanics.js';
 import { postJournal, getBalance } from './ledger.js';
 import { fmtDollar } from './utils.js';
 
+/** @module actions - Player-initiated actions. Thin wrappers that read UI state and delegate to mechanics/ledger. */
+
+/** Approve a pending loan request. Reads the rate from the per-loan slider in the UI.
+ *  @param {string|number} id - loanRequestId */
 export function approveLoan(id) {
   const s = getState();
   const entry = s.eventLog.find(e => e.loanRequestId === id && e.type === 'loan_request');
@@ -13,6 +17,8 @@ export function approveLoan(id) {
   processLoanApproval(s, entry, rate);
 }
 
+/** Reject a pending loan request.
+ *  @param {string|number} id - loanRequestId */
 export function rejectLoan(id) {
   const s = getState();
   const entry = s.eventLog.find(e => e.loanRequestId === id && e.type === 'loan_request');
@@ -22,6 +28,8 @@ export function rejectLoan(id) {
   entry.cls = 'event-expense';
 }
 
+/** Borrow from the central bank at the marginal lending facility rate. Amount from UI input.
+ *  Posts journal entry: cash Dr, cbBorrowing Cr. */
 export function cbBorrow() {
   const s = getState();
   const input = document.getElementById('cbAmount');
@@ -34,6 +42,8 @@ export function cbBorrow() {
   addEvent(s, 'cb', 'Borrowed ' + fmtDollar(amount) + ' from CB at MLF', 'event-expense');
 }
 
+/** Repay central bank borrowing (capped at current cbBorrowing balance). Amount from UI input.
+ *  Posts journal entry: cbBorrowing Dr, cash Cr. */
 export function cbRepay() {
   const s = getState();
   const input = document.getElementById('cbAmount');

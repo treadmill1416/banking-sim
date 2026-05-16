@@ -8,6 +8,7 @@
 </head>
 <body>
 <div class="app">
+<!-- Header: game date, quarter, regime badge, and controls (speed, pause, reset, admin) -->
 <div class="header">
   <div style="display:flex;align-items:center;gap:10px">
     <h1>Bank Runner</h1>
@@ -26,19 +27,23 @@
   </div>
 </div>
 
+<!-- Tab bar: Dashboard / Accounting -->
 <div class="tab-bar">
   <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
   <button class="tab-btn" data-tab="accounting">Accounting</button>
 </div>
 
+<!-- ========== Dashboard Tab ========== -->
 <div class="tab-panel active" id="tabDashboard">
 
+<!-- Charts: reserve ratio, NIM, equity history -->
 <div class="charts-section">
   <div class="chart-card"><svg id="chartReserves"></svg></div>
   <div class="chart-card"><svg id="chartNim"></svg></div>
   <div class="chart-card"><svg id="chartEquity"></svg></div>
 </div>
 
+<!-- Main grid: balance sheet, metrics & rates, accepted loans, loan applications -->
 <div class="grid-main">
       <div class="card">
     <h2>Balance Sheet</h2>
@@ -121,6 +126,7 @@
   </div>
 </div>
 
+<!-- Monthly P&L and configuration panels -->
 <div class="card pnl-card">
   <h2>Monthly P&amp;L</h2>
   <div id="pnlBody"><div class="events-empty">—</div></div>
@@ -143,6 +149,7 @@
 
 </div><!-- /tabDashboard -->
 
+<!-- ========== Accounting Tab ========== -->
 <div class="tab-panel" id="tabAccounting">
   <div class="acct-grid">
     <div class="card acct-card acct-coa">
@@ -166,6 +173,7 @@
 
 </div><!-- /.app -->
 
+<!-- Admin overlay: visible only when debug flag is true, toggled by admin.js -->
 <div class="admin-overlay" id="adminOverlay" style="display:none">
   <div class="admin-modal">
     <div class="admin-header">
@@ -257,6 +265,7 @@
   </div>
 </div>
 
+<!-- ES module entry point -->
 <script type="module" src="js/main.js"></script>
 </body>
 </html>

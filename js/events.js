@@ -4,6 +4,10 @@ import { processLoanApproval, totalAssets } from './mechanics.js';
 import { postJournal, getBalance } from './ledger.js';
 import { fmtDollar } from './utils.js';
 
+/** @module events - Stochastic event generators that drive the game's random dynamics. Each function is called per tick and fires with a configurable probability. */
+
+/** Random deposit inflow/outflow. Amount depends on rate competitiveness vs MRO and current regime modifier.
+ *  @param {object} s */
 export function tryDepositFlow(s) {
   if (Math.random() >= PROB.depositFlow) return;
   const base = 50000 + Math.random() * 450000;
@@ -33,6 +37,9 @@ export function tryDepositFlow(s) {
   }
 }
 
+/** Generate a loan request using a Pareto power-law distribution (α=2). Most requests cluster around `loanDemandPeakPct` of total assets; a heavy tail produces occasional very large requests.
+ *  Auto-approves if default probability is below the auto-accept threshold.
+ *  @param {object} s */
 export function tryLoanRequest(s) {
   const baseProb = (s.loanRequestsPerMonth || 40) / TICKS_PER_MONTH;
   if (Math.random() >= baseProb) return;
@@ -59,6 +66,8 @@ export function tryLoanRequest(s) {
   }
 }
 
+/** Randomly adjust one of the three ECB policy rates by ±25bp. Direction is biased by economic regime. Enforces corridor ordering: Depo ≤ MRO − 25bp ≤ MLF − 25bp.
+ *  @param {object} s */
 export function tryEcbChange(s) {
   if (Math.random() >= PROB.ecbChange) return;
   const bias = REGIME_ECB_BIAS[s.regime];
@@ -87,6 +96,8 @@ export function tryEcbChange(s) {
   addEvent(s, 'ecb', 'ECB ' + dirText + ' ' + rateName + ' to ' + newVal.toFixed(2) + '%', 'event-warn');
 }
 
+/** Markov chain regime transition (boom/normal/recession). Transition probabilities are defined in REGIME_TRANSITIONS.
+ *  @param {object} s */
 export function tryRegimeChange(s) {
   if (Math.random() >= PROB.regimeChange) return;
   const probs = REGIME_TRANSITIONS[s.regime];

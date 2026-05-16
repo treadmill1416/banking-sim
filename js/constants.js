@@ -1,3 +1,5 @@
+/** @module constants - Central game configuration. All tunable parameters, probabilities, regime tables, and initial state defaults live here. */
+
 export const SAVE_KEY = 'bankrunner-state';
 export const TICKS_PER_QUARTER = 2190;
 export const TICKS_PER_YEAR = 8760;

@@ -1,26 +1,37 @@
 import { SAVE_KEY, INITIAL, EVENT_LOG_MAX, TICKS_PER_QUARTER, TICKS_PER_YEAR } from './constants.js';
 import { initLedger } from './ledger.js';
 
+/** @module state - Singleton game state management. Handles initialization, serialization to/from localStorage, and event log. */
+
 let _state = null;
 
+/** Deep-clone the INITIAL constant to create a pristine state object.
+ *  @returns {object} */
 export function createInitialState() {
   return JSON.parse(JSON.stringify(INITIAL));
 }
 
+/** Get the current singleton state object.
+ *  @returns {object} */
 export function getState() {
   return _state;
 }
 
+/** Replace the singleton state object.
+ *  @param {object} s */
 export function setState(s) {
   _state = s;
 }
 
+/** Serialize current state to localStorage. Silently catches quota errors. */
 export function save() {
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify(_state));
   } catch (e) {}
 }
 
+/** Deserialize state from localStorage, with migrations for loanRecords and ledgerJournal.
+ *  @returns {boolean} true if state was loaded, false if no saved state exists */
 export function load() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
@@ -48,11 +59,19 @@ export function load() {
   return false;
 }
 
+/** Reset state to initial defaults and clear localStorage. */
 export function reset() {
   _state = createInitialState();
   localStorage.removeItem(SAVE_KEY);
 }
 
+/** Create a new event log entry with auto-generated tick/quarter/year metadata, prepended to the log.
+ *  @param {object} s - State object
+ *  @param {string} type - Event category (deposit, loan, ecb, regime, cb, default)
+ *  @param {string} msg - Human-readable description
+ *  @param {string} [cls] - CSS class for styling (event-income, event-expense, event-info, event-warn)
+ *  @param {object} [extra] - Additional properties to merge into the entry
+ *  @returns {object} The created event entry */
 export function addEvent(s, type, msg, cls, extra) {
   const q = Math.floor(s.tick / TICKS_PER_QUARTER) % 4 + 1;
   const y = 2026 + Math.floor(s.tick / TICKS_PER_YEAR);

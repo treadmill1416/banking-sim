@@ -9,8 +9,15 @@ import { HISTORY_MAX } from './constants.js';
 import { initAdmin } from './admin.js';
 import { postDailyInterest, updateLedgerPnl, initLedger } from './ledger.js';
 
+/** @module main - Application entry point. Orchestrates the game loop, event delegation, initialization, tab switching, and collapsible cards. */
+
+/** The active setInterval ID for the game loop. null when paused. */
 export let intervalId = null;
 
+/** Core game tick: advance time by 1 hour, run all mechanics and events, update UI, save.
+ *  Order: accrue interest → process defaults → P&L snapshots → loan payments →
+ *  deposit flows → deposit stability → loan requests → ECB changes → regime changes →
+ *  expire old loans → check reserves. */
 function tick() {
   const s = getState();
   s.tick++;
@@ -47,6 +54,7 @@ function tick() {
   save();
 }
 
+/** Restart the game loop interval at the current speed. Batches multiple ticks per frame at high speeds (≥50 ticks/s). */
 export function updateLoop() {
   if (intervalId) { clearInterval(intervalId); intervalId = null; }
   const s = getState();
@@ -60,6 +68,8 @@ export function updateLoop() {
   }
 }
 
+/** Reset the game with admin-provided overrides merged into initial state. Reinitializes ledger, history, and UI.
+ *  @param {object} overrides - State properties to override */
 export function applyAdminConfig(overrides) {
   if (intervalId) { clearInterval(intervalId); intervalId = null; }
   resetState();
@@ -102,6 +112,7 @@ export function applyAdminConfig(overrides) {
   updateLoop();
 }
 
+/** Change game speed and restart the loop. Highlights the active speed button. */
 function setSpeed(speed) {
   getState().speed = speed;
   document.querySelectorAll('.speed-btn[data-speed]').forEach(b => {
@@ -110,6 +121,7 @@ function setSpeed(speed) {
   updateLoop();
 }
 
+/** Pause or resume the game loop. Updates the pause button label. */
 function togglePause() {
   const s = getState();
   s.paused = !s.paused;
@@ -117,6 +129,7 @@ function togglePause() {
   updateLoop();
 }
 
+/** Reset game to initial state after user confirmation. Reinitializes ledger, loan records, and history. */
 function resetGame() {
   if (!confirm('Reset game? All progress will be lost.')) return;
   if (intervalId) { clearInterval(intervalId); intervalId = null; }
@@ -148,13 +161,15 @@ function resetGame() {
   updateLoop();
 }
 
-// --- Event delegation ---
+// --- Event delegation handlers ---
 
+/** Handle speed button clicks via event delegation. */
 function onSpeedClick(e) {
   const btn = e.target.closest('.speed-btn[data-speed]');
   if (btn) setSpeed(parseInt(btn.dataset.speed));
 }
 
+/** Handle approve/reject button clicks in the loan applications panel via event delegation. */
 function onLoanAppsClick(e) {
   const btn = e.target.closest('[data-action]');
   if (!btn) return;
@@ -163,9 +178,12 @@ function onLoanAppsClick(e) {
   if (btn.dataset.action === 'reject') { rejectLoan(id); updateAll(); }
 }
 
+/** Borrow from CB via UI button, then refresh all displays. */
 function onCdBorrowClick() { cbBorrow(); updateAll(); }
+/** Repay CB borrowing via UI button, then refresh all displays. */
 function onCdRepayClick() { cbRepay(); updateAll(); }
 
+/** Refresh all UI displays and save state. Used after any player action (approve/reject/borrow/repay). */
 export function updateAll() {
   updateUI();
   updatePnlDisplay();
@@ -178,6 +196,7 @@ export function updateAll() {
   save();
 }
 
+/** Wire all DOM event listeners: speed buttons, pause, reset, loan actions, sliders, CB desk, tab bar. Called once on init. */
 function bindEvents() {
   document.querySelector('.header-controls').addEventListener('click', onSpeedClick);
   document.getElementById('pauseBtn').addEventListener('click', togglePause);
@@ -232,6 +251,7 @@ function bindEvents() {
   });
 }
 
+/** Add collapse/expand buttons to all card headers. */
 function initCollapsible() {
   document.querySelectorAll('.card h2').forEach(h2 => {
     const btn = document.createElement('button');
@@ -245,6 +265,7 @@ function initCollapsible() {
   });
 }
 
+/** Application entry: load saved state (or create fresh), init ledger, bind events, render UI, start game loop. */
 function init() {
   if (!load()) {
     setState(createInitialState());

@@ -1,5 +1,10 @@
 import { TICKS_PER_QUARTER, TICKS_PER_YEAR, TICKS_PER_MONTH } from './constants.js';
 
+/** @module utils - Pure formatting utility functions. No side effects, no state access. */
+
+/** Format a number as a human-readable dollar string (e.g. "$1.5M", "$200K", "$0").
+ *  @param {number|undefined|null} n - The value to format.
+ *  @returns {string} */
 export function fmtDollar(n) {
   if (n === undefined || n === null || isNaN(n)) return '—';
   if (Math.abs(n) < 0.5) return '$0';
@@ -13,11 +18,17 @@ export function fmtDollar(n) {
   return sign + s.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
+/** Format a number as a percentage string (e.g. "5.50%").
+ *  @param {number|undefined|null} n
+ *  @returns {string} */
 export function fmtPct(n) {
   if (n === undefined || n === null || isNaN(n)) return '—';
   return n.toFixed(2) + '%';
 }
 
+/** Convert a tick count to a human-readable duration (e.g. "1y 3mo 5d").
+ *  @param {number|null|undefined} ticks
+ *  @returns {string} */
 export function fmtTicks(ticks) {
   if (ticks == null || ticks < 0) return '—';
   const y = Math.floor(ticks / TICKS_PER_YEAR);
@@ -31,12 +42,18 @@ export function fmtTicks(ticks) {
   return parts.join(' ');
 }
 
+/** Escape a string for safe insertion into HTML (uses DOM API, no manual regex).
+ *  @param {string} s
+ *  @returns {string} */
 export function escapeHtml(s) {
   const d = document.createElement('div');
   d.textContent = s;
   return d.innerHTML;
 }
 
+/** Convert a tick count to a calendar date/time string. Tick 0 = Jan 1, 2026 00:00.
+ *  @param {number} tick
+ *  @returns {string} */
 export function gameDateStr(tick) {
   const start = new Date(2026, 0, 1);
   const d = new Date(start.getTime() + tick * 3600000);
@@ -44,6 +61,9 @@ export function gameDateStr(tick) {
   return months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear() + ' ' + String(d.getHours()).padStart(2,'0') + ':00';
 }
 
+/** Convert a tick count to a quarter/year string (e.g. "Q1 2026").
+ *  @param {number} tick
+ *  @returns {string} */
 export function quarterStr(tick) {
   const q = Math.floor(tick / TICKS_PER_QUARTER) % 4 + 1;
   const y = 2026 + Math.floor(tick / TICKS_PER_YEAR);

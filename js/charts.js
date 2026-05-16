@@ -1,5 +1,13 @@
 import { getState } from './state.js';
 
+/** @module charts - SVG line chart rendering for reserve ratio, NIM, and equity history. */
+
+/** Draw an SVG line chart within a given SVG element. Shows the last 300 data points with gridlines, axis labels, and a current-value overlay.
+ *  @param {string} svgId - DOM element ID of the target SVG
+ *  @param {number[]} data - Data series
+ *  @param {string} color - SVG stroke color
+ *  @param {string} label - Chart title
+ *  @param {function} formatter - Value formatting function for labels */
 function drawChart(svgId, data, color, label, formatter) {
   const svg = document.getElementById(svgId);
   if (data.length < 2) {
@@ -47,6 +55,7 @@ function drawChart(svgId, data, color, label, formatter) {
   svg.innerHTML = html;
 }
 
+/** Read state history arrays and render all three charts (reserve ratio, NIM, equity). */
 export function updateCharts() {
   const s = getState();
   drawChart('chartReserves', s.historyRR, '#58a6ff', 'Reserve Ratio', v => v.toFixed(2) + '%');

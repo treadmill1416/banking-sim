@@ -2,8 +2,12 @@ import { getState } from './state.js';
 import { applyAdminConfig } from './main.js';
 import { getBalance } from './ledger.js';
 
+/** @module admin - Admin settings panel for overriding game state. Visible only when state.debug is true. Supports save/load presets via localStorage. */
+
 const ADMIN_PRESET_KEY = 'bankrunner-admin-preset';
 
+/** Initialize admin panel: hide if not debug, wire button event listeners.
+ *  @param {object} s - (unused, reads from getState internally) */
 export function initAdmin() {
   if (!getState().debug) {
     document.getElementById('adminBtn').style.display = 'none';
@@ -19,6 +23,7 @@ export function initAdmin() {
   document.getElementById('adminLoadPresetBtn').addEventListener('click', loadPreset);
 }
 
+/** Toggle admin modal visibility. Populates form fields from current state when opening. */
 function toggleAdminPanel() {
   const overlay = document.getElementById('adminOverlay');
   const isOpen = overlay.style.display !== 'none';
@@ -26,6 +31,7 @@ function toggleAdminPanel() {
   if (!isOpen) populateFromState();
 }
 
+/** Fill admin form fields with current game state values. */
 function populateFromState() {
   const s = getState();
   document.getElementById('adminReserves').value = getBalance(s, 'cash');
@@ -45,6 +51,8 @@ function populateFromState() {
   document.getElementById('adminAutoCb').checked = s.autoCbBorrowing;
 }
 
+/** Read all admin form field values into a config object.
+ *  @returns {object} */
 function readAdminConfig() {
   return {
     reserves: parseFloat(document.getElementById('adminReserves').value) || 0,
@@ -65,6 +73,7 @@ function readAdminConfig() {
   };
 }
 
+/** Confirm and apply admin config, resetting the game with new values. */
 function applySettings() {
   if (!confirm('Apply admin settings and reset game? All progress will be lost.')) return;
   const config = readAdminConfig();
@@ -72,6 +81,7 @@ function applySettings() {
   toggleAdminPanel();
 }
 
+/** Save the current admin config as a named preset in localStorage. */
 function savePreset() {
   const name = prompt('Preset name:', 'My Scenario');
   if (!name) return;
@@ -85,6 +95,7 @@ function savePreset() {
   }
 }
 
+/** Load and apply a saved admin preset from localStorage. */
 function loadPreset() {
   try {
     const raw = localStorage.getItem(ADMIN_PRESET_KEY);

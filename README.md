@@ -337,3 +337,32 @@ Date: new Date(2026, 0, 1) + tick × 3600000 ms
 ```
 
 No build step. ES modules — run via local server.
+
+## Admin Panel
+
+A hidden admin interface is available when `state.debug === true`. Toggle the **⚙** button to open a modal that lets you override:
+- Initial balance sheet values (reserves, loans, deposits, CB borrowing)
+- All interest rates (loan, deposit, ECB corridor)
+- Economic regime (boom / normal / recession)
+- Auto-accept threshold, deposit stability threshold
+- Loan demand parameters
+
+You can save/load presets via localStorage. Changes reset the game with the new configuration.
+
+**To enable:** Open browser console and run `getState().debug = true`.
+
+## Module Dependency Order (tick loop)
+
+Each game tick executes operations in a specific order. When adding new features, insert logic at the appropriate position:
+
+1. `accrueInterest` — per-tick interest accumulation
+2. `processDefaults` — loan default checks
+3. `updateLedgerPnl` — P&L month boundary tracking
+4. `processLoanPayments` — monthly amortizing payments
+5. `tryDepositFlow` — stochastic deposit inflow/outflow
+6. `tryDepositStability` — flight-risk outflows
+7. `tryLoanRequest` — stochastic loan request generation
+8. `tryEcbChange` — ECB policy rate drift
+9. `tryRegimeChange` — Markov chain regime transitions
+10. `expireOldLoans` — stale loan request expiry
+11. `checkReserves` — auto-borrow from CB if deficient

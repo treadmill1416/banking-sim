@@ -1,3 +1,6 @@
+/** @module ledger - Double-entry accounting system. Manages chart of accounts, journal entries (debit/credit balancing), daily interest posting, and month-to-month P&L tracking. */
+
+/** Account type classification. Determines whether a balance increases on debit (asset, expense) or credit (liability, equity, income). */
 export const ACCOUNT_TYPES = {
   cash: 'asset',
   loansReceivable: 'asset',
@@ -12,6 +15,8 @@ export const ACCOUNT_TYPES = {
   defaultLosses: 'expense',
 };
 
+/** Initialize the ledger: reset journal, balances, and post opening entries from the flat state fields.
+ *  @param {object} s - State object */
 export function initLedger(s) {
   s.ledgerJournal = [];
   s.ledgerBalances = {};
@@ -33,6 +38,9 @@ export function initLedger(s) {
   s.ledgerMonthStart = snapshotIncomeAccounts(s);
 }
 
+/** Snapshot all income/expense account balances at the current tick for later P&L delta computation.
+ *  @param {object} s
+ *  @returns {object} */
 function snapshotIncomeAccounts(s) {
   const b = s.ledgerBalances;
   return {
@@ -45,6 +53,10 @@ function snapshotIncomeAccounts(s) {
   };
 }
 
+/** Post a journal entry with multiple lines. Validates debit = credit. Debits increase asset/expense accounts; credits increase liability/equity/income accounts.
+ *  @param {object} s - State object
+ *  @param {Array<{account: string, debit?: number, credit?: number}>} entries - Journal lines
+ *  @param {string} desc - Human-readable description */
 export function postJournal(s, entries, desc) {
   let totalDebit = 0, totalCredit = 0;
   for (const e of entries) {
@@ -80,10 +92,17 @@ export function postJournal(s, entries, desc) {
   });
 }
 
+/** Get the current balance of any account.
+ *  @param {object} s
+ *  @param {string} account
+ *  @returns {number} */
 export function getBalance(s, account) {
   return s.ledgerBalances[account] || 0;
 }
 
+/** Compute equity as total assets minus total liabilities.
+ *  @param {object} s
+ *  @returns {number} */
 export function getEquity(s) {
   const b = s.ledgerBalances;
   const assets = (b.cash || 0) + (b.loansReceivable || 0);
@@ -91,6 +110,9 @@ export function getEquity(s) {
   return assets - liabilities;
 }
 
+/** Compute net income as total income minus total expenses.
+ *  @param {object} s
+ *  @returns {number} */
 export function getNetIncome(s) {
   const b = s.ledgerBalances;
   const income = (b.interestIncome || 0) + (b.reserveInterestIncome || 0);
@@ -98,6 +120,9 @@ export function getNetIncome(s) {
   return income - expenses;
 }
 
+/** Post accumulated daily interest as journal entries. Resets the daily interest accumulator.
+ *  Called every 24 ticks in the game loop.
+ *  @param {object} s */
 export function postDailyInterest(s) {
   const d = s._dailyInt;
   const entries = [];
@@ -119,6 +144,9 @@ export function postDailyInterest(s) {
   s._dailyInt = { depoInt: 0, resInt: 0, cbInt: 0 };
 }
 
+/** Get month-to-date P&L as deltas from the month-start snapshot.
+ *  @param {object} s
+ *  @returns {object|null} */
 export function getCurrentMonthPnl(s) {
   const b = s.ledgerBalances;
   const ms = s.ledgerMonthStart;
@@ -132,6 +160,8 @@ export function getCurrentMonthPnl(s) {
   };
 }
 
+/** Snapshot income accounts and store completed month P&L if a month boundary has been crossed.
+ *  @param {object} s */
 export function updateLedgerPnl(s) {
   const current = snapshotIncomeAccounts(s);
   if (s.tick - (s.ledgerMonthStart?.tick || 0) >= 730) {

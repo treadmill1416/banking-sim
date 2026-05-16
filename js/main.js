@@ -8,6 +8,7 @@ import { updateCharts } from './charts.js';
 import { HISTORY_MAX, LOANS_PER_OFFICER } from './constants.js';
 import { addEvent } from './state.js';
 import { initAdmin } from './admin.js';
+import { initTesting } from './testing.js';
 import { postDailyInterest, updateLedgerPnl, initLedger } from './ledger.js';
 
 /** @module main - Application entry point. Orchestrates the game loop, event delegation, initialization, tab switching, and collapsible cards. */
@@ -328,6 +329,7 @@ function init() {
   initCollapsible();
   bindEvents();
   initAdmin();
+  initTesting();
   updateAll();
   updateLoop();
 }

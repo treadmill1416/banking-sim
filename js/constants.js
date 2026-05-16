@@ -49,7 +49,7 @@ export const INITIAL = {
   cumulativeDefaults: 0,
   defaultTicks: [],
   defaultAmounts: [],
-  debug: false,
+  debug: true,
   autoAcceptThreshold: 0,
   autoCbBorrowing: true,
   weightedLoanRate: 5.50,

@@ -27,6 +27,11 @@
   </div>
 </div>
 
+<!-- Debug bar: testing actions (visible only when debug is enabled) -->
+<div class="debug-bar" id="debugBar" style="display:none">
+  <button class="debug-btn" id="defaultAllLoansBtn">Default All Loans</button>
+</div>
+
 <!-- Tab bar: Dashboard / Accounting -->
 <div class="tab-bar">
   <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
@@ -65,40 +70,6 @@
     </div>
   </div>
 
-  <div class="card">
-    <h2>Metrics &amp; Rates</h2>
-    <div class="metrics-grid">
-      <div class="metric">
-        <div class="metric-label">Reserve Ratio</div>
-        <div class="metric-value" id="metricReserveRatio">—</div>
-      </div>
-      <div class="metric">
-        <div class="metric-label">Equity</div>
-        <div class="metric-value" id="metricEquity">—</div>
-      </div>
-      <div class="metric">
-        <div class="metric-label">NIM</div>
-        <div class="metric-value" id="metricNim">—</div>
-      </div>
-      <div class="metric">
-        <div class="metric-label">NPL Ratio</div>
-        <div class="metric-value" id="metricNpl">—</div>
-      </div>
-    </div>
-    <div class="ecb-rates">
-      <span class="ecb-rate ecb-mlf" id="ecbMlf">MLF —%</span>
-      <span class="ecb-rate ecb-mro" id="ecbMro">MRO —%</span>
-      <span class="ecb-rate ecb-depo" id="ecbDepo">Depo —%</span>
-    </div>
-    <div class="cb-desk">
-      <h3>Central Bank Desk</h3>
-      <div class="cb-row">
-        <input type="number" id="cbAmount" value="100000" step="10000" min="0">
-        <button class="cb-btn borrow" id="cbBorrowBtn">Borrow</button>
-        <button class="cb-btn repay" id="cbRepayBtn">Repay</button>
-      </div>
-    </div>
-  </div>
   <div class="card accepted-loans">
     <h2>Accepted Loans <span id="acceptedLoanCount" style="font-size:11px;font-weight:400;text-transform:none;color:#8b949e"></span></h2>
     <svg id="defaultRateChart" style="width:100%;height:80px;margin-bottom:6px"></svg>
@@ -185,6 +156,40 @@
       <div class="nim-explanation">
         <p><strong>Net Interest Margin (NIM)</strong> measures the difference between interest income earned on loans and reserves versus interest paid on deposits and CB borrowing, relative to total earning assets. It is annualized and expressed as a percentage.</p>
         <p>A positive NIM means your bank is earning more on its assets than it costs to fund them. A narrowing NIM signals compressed margins — consider adjusting loan or deposit rates.</p>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Metrics &amp; Rates</h2>
+    <div class="metrics-grid">
+      <div class="metric">
+        <div class="metric-label">Reserve Ratio</div>
+        <div class="metric-value" id="metricReserveRatio">—</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Equity</div>
+        <div class="metric-value" id="metricEquity">—</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">NIM</div>
+        <div class="metric-value" id="metricNim">—</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">NPL Ratio</div>
+        <div class="metric-value" id="metricNpl">—</div>
+      </div>
+    </div>
+    <div class="ecb-rates">
+      <span class="ecb-rate ecb-mlf" id="ecbMlf">MLF —%</span>
+      <span class="ecb-rate ecb-mro" id="ecbMro">MRO —%</span>
+      <span class="ecb-rate ecb-depo" id="ecbDepo">Depo —%</span>
+    </div>
+    <div class="cb-desk">
+      <h3>Central Bank Desk</h3>
+      <div class="cb-row">
+        <input type="number" id="cbAmount" value="100000" step="10000" min="0">
+        <button class="cb-btn borrow" id="cbBorrowBtn">Borrow</button>
+        <button class="cb-btn repay" id="cbRepayBtn">Repay</button>
       </div>
     </div>
   </div>

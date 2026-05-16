@@ -290,7 +290,7 @@ export function computeDefaultRate(s) {
 
 /** Recalculate weighted average loan rate from all active loans: Σ(amount_i × rate_i) / Σ(amount_i).
  *  @param {object} s */
-function recomputeWeightedLoanRate(s) {
+export function recomputeWeightedLoanRate(s) {
   let total = 0;
   let weighted = 0;
   for (const lr of s.loanRecords) {

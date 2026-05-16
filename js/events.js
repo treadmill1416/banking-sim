@@ -92,6 +92,11 @@ export function tryLoanRequest(s) {
   if (s.autoAcceptThreshold > 0 && entry.defaultProb <= s.autoAcceptThreshold) {
     processLoanApproval(s, entry, s.loanRate);
   }
+  if (s.autoRejectThreshold > 0 && entry.defaultProb >= s.autoRejectThreshold) {
+    entry.approved = false;
+    entry.rejectedAtTick = s.tick;
+    addEvent(s, 'loan', 'Auto-rejected (risk too high): ' + fmtDollar(amount), 'event-expense');
+  }
 }
 
 /** Randomly adjust one of the three ECB policy rates by ±25bp. Direction is biased by economic regime. Enforces corridor ordering: Depo ≤ MRO − 25bp ≤ MLF − 25bp.

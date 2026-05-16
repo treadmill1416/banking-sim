@@ -109,6 +109,7 @@ export function applyAdminConfig(overrides) {
   s.defaultRateHistory = [];
   document.getElementById('loanRateSlider').value = s.loanRate;
   document.getElementById('depositRateSlider').value = s.depositRate;
+  document.getElementById('autoRejectSlider').value = s.autoRejectThreshold;
   document.getElementById('autoAcceptSlider').value = s.autoAcceptThreshold;
   document.getElementById('autoCbCheckbox').checked = s.autoCbBorrowing;
   document.getElementById('pauseBtn').textContent = '▶';
@@ -159,6 +160,7 @@ function resetGame() {
   s.historyNIM.push(computeNim(s));
   s.historyEQ.push(equity(s));
   document.getElementById('autoAcceptSlider').value = s.autoAcceptThreshold;
+  document.getElementById('autoRejectSlider').value = s.autoRejectThreshold;
   document.getElementById('autoCbCheckbox').checked = s.autoCbBorrowing;
   document.getElementById('pauseBtn').textContent = s.paused ? '▶' : '⏸';
   updateAll();
@@ -266,6 +268,12 @@ function bindEvents() {
     save();
   });
 
+  document.getElementById('autoRejectSlider').addEventListener('input', function () {
+    getState().autoRejectThreshold = parseFloat(this.value);
+    document.getElementById('autoRejectDisplay').textContent = getState().autoRejectThreshold.toFixed(1) + '%';
+    save();
+  });
+
   document.getElementById('insuranceSlider').addEventListener('input', function () {
     getState().depositInsurancePct = parseFloat(this.value);
     document.getElementById('insuranceDisplay').textContent = getState().depositInsurancePct + '%';
@@ -334,6 +342,7 @@ function init() {
   document.querySelector('.speed-btn[data-speed="' + s.speed + '"]')?.classList.add('active');
   if (s.paused) document.getElementById('pauseBtn').textContent = '▶';
   document.getElementById('autoAcceptSlider').value = s.autoAcceptThreshold;
+  document.getElementById('autoRejectSlider').value = s.autoRejectThreshold;
   document.getElementById('insuranceSlider').value = s.depositInsurancePct;
   document.getElementById('insuranceDisplay').textContent = s.depositInsurancePct + '%';
   document.getElementById('autoCbCheckbox').checked = s.autoCbBorrowing;

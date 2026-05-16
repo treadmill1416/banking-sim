@@ -48,6 +48,8 @@ export function updateUI() {
 
   document.getElementById('loanRateDisplay').textContent = s.loanRate.toFixed(2) + '%';
   document.getElementById('depositRateDisplay').textContent = s.depositRate.toFixed(2) + '%';
+  const rejEl = document.getElementById('autoRejectDisplay');
+  if (rejEl) rejEl.textContent = s.autoRejectThreshold.toFixed(1) + '%';
   const insEl = document.getElementById('insuranceDisplay');
   if (insEl) insEl.textContent = s.depositInsurancePct + '%';
 

@@ -146,6 +146,12 @@
         <input type="range" id="autoAcceptSlider" min="0" max="25" step="0.5" value="0">
         <div class="slider-hint">Loan requests with default risk at or below this threshold are auto-approved at the standard rate.</div>
       </div>
+      <div class="policies-divider"></div>
+      <div class="slider-group">
+        <div class="slider-label"><span>Auto-reject Risk Threshold</span><span class="rate-val" id="autoRejectDisplay">25.0%</span></div>
+        <input type="range" id="autoRejectSlider" min="0" max="50" step="0.5" value="25">
+        <div class="slider-hint">Loan requests with default risk at or above this threshold are automatically rejected.</div>
+      </div>
     </div>
   </div>
 
@@ -308,6 +314,10 @@
         <div class="admin-field">
           <label>Auto-accept Threshold (%)</label>
           <input type="number" id="adminAutoAccept" value="0" step="0.5" min="0" max="25">
+        </div>
+        <div class="admin-field">
+          <label>Auto-reject Threshold (%)</label>
+          <input type="number" id="adminAutoReject" value="25" step="0.5" min="0" max="50">
         </div>
         <div class="admin-field">
           <label>Deposit Stability Threshold (%)</label>

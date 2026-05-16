@@ -56,6 +56,7 @@ export const INITIAL = {
   bankRunActive: false,
   bankRunStartTick: 0,
   autoAcceptThreshold: 0,
+  autoRejectThreshold: 25,
   autoCbBorrowing: true,
   weightedLoanRate: 5.50,
   depositStabilityThreshold: 0,

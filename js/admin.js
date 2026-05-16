@@ -45,6 +45,7 @@ function populateFromState() {
   document.getElementById('adminEcbMlfRate').value = s.ecbMlfRate;
   document.getElementById('adminRegime').value = s.regime;
   document.getElementById('adminAutoAccept').value = s.autoAcceptThreshold;
+  document.getElementById('adminAutoReject').value = s.autoRejectThreshold;
   document.getElementById('adminDepoStabThresh').value = s.depositStabilityThreshold;
   document.getElementById('adminLoanReqMonth').value = s.loanRequestsPerMonth;
   document.getElementById('adminLoanDemandPeak').value = s.loanDemandPeakPct;
@@ -66,6 +67,7 @@ function readAdminConfig() {
     ecbMlfRate: parseFloat(document.getElementById('adminEcbMlfRate').value) || 0,
     regime: document.getElementById('adminRegime').value,
     autoAcceptThreshold: parseFloat(document.getElementById('adminAutoAccept').value) || 0,
+    autoRejectThreshold: parseFloat(document.getElementById('adminAutoReject').value) || 25,
     depositStabilityThreshold: parseFloat(document.getElementById('adminDepoStabThresh').value) || 0,
     loanRequestsPerMonth: parseInt(document.getElementById('adminLoanReqMonth').value) || 40,
     loanDemandPeakPct: parseFloat(document.getElementById('adminLoanDemandPeak').value) || 3,

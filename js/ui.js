@@ -1,7 +1,7 @@
 import { getState } from './state.js';
-import { reserveRatio, equity, totalAssets, computeNim, trailingNpl, computeDefaultRate } from './mechanics.js';
+import { reserveRatio, equity, totalAssets, computeNim, trailingNpl, computeDefaultRate, activeLoanCapacity, countActiveLoans } from './mechanics.js';
 import { fmtDollar, fmtPct, escapeHtml, gameDateStr, quarterStr, fmtTicks } from './utils.js';
-import { TICKS_PER_MONTH, TICKS_PER_YEAR, HISTORY_MAX, LOAN_DEFAULT_DURATION } from './constants.js';
+import { TICKS_PER_MONTH, TICKS_PER_YEAR, HISTORY_MAX, LOAN_DEFAULT_DURATION, LOANS_PER_OFFICER, SALARY_PER_OFFICER } from './constants.js';
 import { getBalance, getNetIncome, getCurrentMonthPnl, ACCOUNT_TYPES } from './ledger.js';
 
 /** @module ui - All DOM rendering. Updates the dashboard (balance sheet, metrics, P&L, loan panels, event log) and accounting tab. */
@@ -104,7 +104,7 @@ function pnlRow(label, value, cls) {
 
 /** Build a complete P&L section with all income/expense rows and net total. */
 function pnlSection(title, p, cls) {
-  const net = (p.interestIncome || 0) + (p.reserveInterestIncome || 0) - (p.interestExpense || 0) - (p.cbInterestExpense || 0) - (p.defaultLosses || 0);
+  const net = (p.interestIncome || 0) + (p.reserveInterestIncome || 0) - (p.interestExpense || 0) - (p.cbInterestExpense || 0) - (p.defaultLosses || 0) - (p.salaryExpense || 0);
   const netCls = net >= 0 ? 'pnl-income' : 'pnl-expense';
   return '<div class="' + cls + '">' + title + '</div>' +
     '<div class="pnl-rows">' +
@@ -112,6 +112,7 @@ function pnlSection(title, p, cls) {
     pnlRow('Reserve Interest', pnlSigned(p.reserveInterestIncome), 'pnl-income') +
     pnlRow('Deposit Interest', pnlSigned(-(p.interestExpense || 0)), 'pnl-expense') +
     pnlRow('CB Interest', pnlSigned(-(p.cbInterestExpense || 0)), 'pnl-expense') +
+    pnlRow('Salaries', pnlSigned(-(p.salaryExpense || 0)), 'pnl-expense') +
     pnlRow('Defaults', pnlSigned(-(p.defaultLosses || 0)), 'pnl-expense') +
     '<div class="pnl-divider"></div>' +
     pnlRow('Net P&L', pnlSigned(net), netCls) +
@@ -204,6 +205,11 @@ export function updateLoanApps() {
     return;
   }
   let html = '';
+  const active = countActiveLoans(s);
+  const capacity = activeLoanCapacity(s);
+  if (active >= capacity) {
+    html += '<div class="hr-warn">⚠ All loan officers are occupied (' + active + '/' + capacity + '). Hire more to process additional loans.</div>';
+  }
   for (const e of pending) {
     const rate = e.proposedRate || s.loanRate;
     const interest = e.loanAmount * rate / 100;
@@ -362,6 +368,7 @@ export function updateAccountingTab() {
       '<div class="acct-section">Expenses</div>' +
       acctRow('Interest Expense', b.interestExpense || 0) +
       acctRow('CB Interest Expense', b.cbInterestExpense || 0) +
+      acctRow('Salary Expense', b.salaryExpense || 0) +
       acctRow('Default Losses', b.defaultLosses || 0) +
     '</div>';
   }
@@ -381,6 +388,7 @@ export function updateAccountingTab() {
       { label: 'Interest Expense', acct: 'interestExpense' },
       { label: 'CB Interest Expense', acct: 'cbInterestExpense' },
       { label: 'Default Losses', acct: 'defaultLosses' },
+      { label: 'Salary Expense', acct: 'salaryExpense' },
     ];
     let totalDr = 0, totalCr = 0;
     let rows = '';
@@ -407,7 +415,7 @@ export function updateAccountingTab() {
     const cur = getCurrentMonthPnl(s);
     if (cur) {
       const income = (cur.interestIncome || 0) + (cur.reserveInterestIncome || 0);
-      const expenses = (cur.interestExpense || 0) + (cur.cbInterestExpense || 0) + (cur.defaultLosses || 0);
+      const expenses = (cur.interestExpense || 0) + (cur.cbInterestExpense || 0) + (cur.salaryExpense || 0) + (cur.defaultLosses || 0);
       isBody.innerHTML = '<div class="acct-body-inner">' +
         '<div class="acct-section">Income</div>' +
         acctRow('Interest Income', cur.interestIncome || 0) +
@@ -416,6 +424,7 @@ export function updateAccountingTab() {
         '<div class="acct-section">Expenses</div>' +
         acctRow('Interest Expense', cur.interestExpense || 0) +
         acctRow('CB Interest Expense', cur.cbInterestExpense || 0) +
+        acctRow('Salary Expense', cur.salaryExpense || 0) +
         acctRow('Default Losses', cur.defaultLosses || 0) +
         acctRow('Total Expenses', expenses, 'total') +
         '<div class="acct-section">' +
@@ -453,4 +462,29 @@ export function updateAccountingTab() {
       jrBody.innerHTML = html + '</div>';
     }
   }
+}
+
+/** Render the Human Resources tab: loan officer count, capacity usage, hire/fire buttons, and salary info. */
+export function updateHrTab() {
+  const s = getState();
+  const body = document.getElementById('hrBody');
+  if (!body) return;
+  const active = countActiveLoans(s);
+  const cap = activeLoanCapacity(s);
+  const cost = s.numWorkers * SALARY_PER_OFFICER;
+  body.innerHTML =
+    '<div class="hr-stats">' +
+      '<div class="hr-stat"><div class="hr-stat-label">Loan Officers</div><div class="hr-stat-value">' + s.numWorkers + '</div></div>' +
+      '<div class="hr-stat"><div class="hr-stat-label">Active Loans</div><div class="hr-stat-value">' + active + '</div></div>' +
+      '<div class="hr-stat"><div class="hr-stat-label">Capacity</div><div class="hr-stat-value">' + active + ' / ' + cap + '</div></div>' +
+      '<div class="hr-stat"><div class="hr-stat-label">Monthly Salary Cost</div><div class="hr-stat-value">' + fmtDollar(cost) + '</div></div>' +
+    '</div>' +
+    '<div class="hr-actions">' +
+      '<button class="hr-btn hire" data-action="hire"' + (s.paused === false ? '' : '') + '>Hire +1</button>' +
+      '<button class="hr-btn fire" data-action="fire"' + (s.numWorkers <= 1 || active > (s.numWorkers - 1) * LOANS_PER_OFFICER ? ' disabled' : '') + '>Fire -1</button>' +
+    '</div>' +
+    '<div class="hr-detail">' +
+      '<div class="hr-detail-row"><span>Each loan officer can manage up to <strong>' + LOANS_PER_OFFICER + '</strong> active loans.</span></div>' +
+      '<div class="hr-detail-row"><span>Salary: <strong>' + fmtDollar(SALARY_PER_OFFICER) + '</strong> per officer per month.</span></div>' +
+    '</div>';
 }

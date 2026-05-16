@@ -233,3 +233,21 @@ input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;bac
 .admin-btn:hover{background:#30363d;border-color:#8b949e}
 .admin-btn.primary{background:#1f6feb;border-color:#1f6feb;color:#fff}
 .admin-btn.primary:hover{background:#388bfd}
+
+/* === HR Tab === */
+.hr-body{padding:4px 0}
+.hr-stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.hr-stat{background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:12px;text-align:center}
+.hr-stat-label{font-size:11px;color:#8b949e;text-transform:uppercase;letter-spacing:0.3px;margin-bottom:4px}
+.hr-stat-value{font-size:22px;font-weight:700;font-family:'SF Mono','Cascadia Code','Consolas',monospace;color:#f0f6fc}
+.hr-actions{display:flex;gap:8px;justify-content:center;margin-bottom:16px}
+.hr-btn{padding:8px 24px;font-size:14px;font-weight:600;border:1px solid;border-radius:6px;cursor:pointer;font-family:inherit;transition:all .15s}
+.hr-btn.hire{background:#3fb95010;color:#3fb950;border-color:#238636}
+.hr-btn.hire:hover{background:#3fb95030}
+.hr-btn.fire{background:#f8514910;color:#f85149;border-color:#da3633}
+.hr-btn.fire:hover{background:#f8514930}
+.hr-btn:disabled{opacity:0.4;cursor:not-allowed}
+.hr-detail{background:#0d1117;border:1px solid #21262d;border-radius:6px;padding:10px 14px}
+.hr-detail-row{font-size:13px;color:#8b949e;padding:3px 0}
+.hr-detail-row strong{color:#c9d1d9}
+.hr-warn{background:#3d0f0f;color:#f85149;border:1px solid #da3633;border-radius:4px;padding:8px 10px;margin-bottom:8px;font-size:12px;font-weight:600;text-align:center}

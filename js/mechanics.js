@@ -1,4 +1,4 @@
-import { TICKS_PER_YEAR, TICKS_PER_MONTH, RESERVE_RATIO_TARGET, NPL_WINDOW, DEFAULT_WINDOW, REGIME_MULTIPLIERS, DEFAULT_ANNUAL_RATE, PROB, LOAN_EXPIRY_TICKS, LOAN_DEFAULT_DURATION, DEPO_STABILITY_PROB, DEPO_STABILITY_RATE } from './constants.js';
+import { TICKS_PER_YEAR, TICKS_PER_MONTH, RESERVE_RATIO_TARGET, NPL_WINDOW, DEFAULT_WINDOW, REGIME_MULTIPLIERS, DEFAULT_ANNUAL_RATE, PROB, LOAN_EXPIRY_TICKS, LOAN_DEFAULT_DURATION, DEPO_STABILITY_PROB, DEPO_STABILITY_RATE, LOANS_PER_OFFICER, SALARY_PER_OFFICER } from './constants.js';
 import { addEvent } from './state.js';
 import { fmtDollar } from './utils.js';
 import { postJournal, getBalance, getEquity, getNetIncome } from './ledger.js';
@@ -107,6 +107,37 @@ export function customerRefuses(s, rate) {
   return Math.random() < refusalProb / 100;
 }
 
+/** Maximum active loans the current workforce can handle.
+ *  @param {object} s
+ *  @returns {number} */
+export function activeLoanCapacity(s) {
+  return s.numWorkers * LOANS_PER_OFFICER;
+}
+
+/** Number of active loans currently on the books.
+ *  @param {object} s
+ *  @returns {number} */
+export function countActiveLoans(s) {
+  let count = 0;
+  for (const lr of s.loanRecords) {
+    if (lr.status === 'active') count++;
+  }
+  return count;
+}
+
+/** Process monthly salary payments for all loan officers. Fires on month boundaries.
+ *  @param {object} s */
+export function processSalaries(s) {
+  if (s.tick % TICKS_PER_MONTH !== 0) return;
+  const totalSalary = s.numWorkers * SALARY_PER_OFFICER;
+  if (totalSalary === 0) return;
+  postJournal(s, [
+    { account: 'salaryExpense', debit: totalSalary },
+    { account: 'cash', credit: totalSalary },
+  ], 'Monthly salaries - ' + s.numWorkers + ' loan officers');
+  addEvent(s, 'hr', 'Paid salaries: ' + fmtDollar(totalSalary) + ' for ' + s.numWorkers + ' loan officer(s)', 'event-expense');
+}
+
 /** Process a loan approval: create loan record, post journal entries (credit creation — deposits created ex nihilo), collect first payment, update weighted average rate, and check reserves.
  *  @param {object} s
  *  @param {object} entry - Event log entry for this loan request
@@ -117,6 +148,12 @@ export function processLoanApproval(s, entry, rate) {
     entry.msg += ' — CUSTOMER REFUSED';
     entry.cls = 'event-expense';
     addEvent(s, 'loan', 'Customer refused loan of ' + fmtDollar(entry.loanAmount) + ' at ' + rate.toFixed(2) + '%', 'event-expense');
+    return;
+  }
+  if (countActiveLoans(s) >= activeLoanCapacity(s)) {
+    entry.msg += ' — ALL LOAN OFFICERS OCCUPIED';
+    entry.cls = 'event-expense';
+    addEvent(s, 'loan', 'Cannot approve loan of ' + fmtDollar(entry.loanAmount) + ' — all loan officers are occupied. Hire more.', 'event-expense');
     return;
   }
   const months = entry.durationMonths || 12;

@@ -1,11 +1,12 @@
 import { getState, setState, createInitialState, load, save, reset as resetState } from './state.js';
-import { accrueInterest, processDefaults, checkReserves, expireOldLoans, reserveRatio, computeNim, equity, tryDepositStability, processLoanPayments, computeDefaultRate } from './mechanics.js';
+import { accrueInterest, processDefaults, checkReserves, expireOldLoans, reserveRatio, computeNim, equity, tryDepositStability, processLoanPayments, computeDefaultRate, processSalaries, activeLoanCapacity, countActiveLoans } from './mechanics.js';
 import { tryDepositFlow, tryLoanRequest, tryEcbChange, tryRegimeChange } from './events.js';
 import { approveLoan, rejectLoan, cbBorrow, cbRepay } from './actions.js';
 import { fmtDollar } from './utils.js';
-import { updateUI, updateEventLog, updateLoanApps, updatePnlDisplay, updateAcceptedLoans, updateLedgerDisplay, updateAccountingTab } from './ui.js';
+import { updateUI, updateEventLog, updateLoanApps, updatePnlDisplay, updateAcceptedLoans, updateLedgerDisplay, updateAccountingTab, updateHrTab } from './ui.js';
 import { updateCharts } from './charts.js';
-import { HISTORY_MAX } from './constants.js';
+import { HISTORY_MAX, LOANS_PER_OFFICER } from './constants.js';
+import { addEvent } from './state.js';
 import { initAdmin } from './admin.js';
 import { postDailyInterest, updateLedgerPnl, initLedger } from './ledger.js';
 
@@ -25,6 +26,7 @@ function tick() {
   accrueInterest(s);
   processDefaults(s);
   updateLedgerPnl(s);
+  processSalaries(s);
   processLoanPayments(s);
   tryDepositFlow(s);
   tryDepositStability(s);
@@ -182,6 +184,25 @@ function onLoanAppsClick(e) {
 function onCdBorrowClick() { cbBorrow(); updateAll(); }
 /** Repay CB borrowing via UI button, then refresh all displays. */
 function onCdRepayClick() { cbRepay(); updateAll(); }
+/** Hire a loan officer. */
+function onHireClick() {
+  const s = getState();
+  s.numWorkers++;
+  addEvent(s, 'hr', 'Hired a loan officer — now ' + s.numWorkers + ' total', 'event-info');
+  updateAll();
+}
+/** Fire a loan officer if it won't violate the capacity constraint. */
+function onFireClick() {
+  const s = getState();
+  if (s.numWorkers <= 1) return;
+  if (countActiveLoans(s) > (s.numWorkers - 1) * LOANS_PER_OFFICER) {
+    addEvent(s, 'hr', 'Cannot fire — active loans exceed reduced capacity', 'event-warn');
+    return;
+  }
+  s.numWorkers--;
+  addEvent(s, 'hr', 'Fired a loan officer — now ' + s.numWorkers + ' total', 'event-expense');
+  updateAll();
+}
 
 /** Refresh all UI displays and save state. Used after any player action (approve/reject/borrow/repay). */
 export function updateAll() {
@@ -189,6 +210,7 @@ export function updateAll() {
   updatePnlDisplay();
   updateLedgerDisplay();
   updateAccountingTab();
+  updateHrTab();
   updateCharts();
   updateEventLog();
   updateLoanApps();
@@ -202,6 +224,12 @@ function bindEvents() {
   document.getElementById('pauseBtn').addEventListener('click', togglePause);
   document.getElementById('resetBtn').addEventListener('click', resetGame);
   document.getElementById('loanAppsList').addEventListener('click', onLoanAppsClick);
+  document.getElementById('hrBody').addEventListener('click', function (e) {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    if (btn.dataset.action === 'hire') onHireClick();
+    if (btn.dataset.action === 'fire') onFireClick();
+  });
   document.getElementById('loanAppsList').addEventListener('input', function (e) {
     const slider = e.target.closest('.app-rate-slider');
     if (!slider) return;
@@ -247,6 +275,7 @@ function bindEvents() {
       this.classList.add('active');
       document.getElementById('tab' + this.dataset.tab.charAt(0).toUpperCase() + this.dataset.tab.slice(1)).classList.add('active');
       if (this.dataset.tab === 'accounting') updateAccountingTab();
+      if (this.dataset.tab === 'hr') updateHrTab();
     });
   });
 }

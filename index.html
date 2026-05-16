@@ -31,6 +31,7 @@
 <div class="tab-bar">
   <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
   <button class="tab-btn" data-tab="accounting">Accounting</button>
+  <button class="tab-btn" data-tab="hr">HR</button>
 </div>
 
 <!-- ========== Dashboard Tab ========== -->
@@ -83,14 +84,6 @@
         <div class="metric-label">NPL Ratio</div>
         <div class="metric-value" id="metricNpl">—</div>
       </div>
-    </div>
-    <div class="slider-group">
-      <div class="slider-label"><span>Loan Rate (auto-accept)</span><span class="rate-val" id="loanRateDisplay">5.50%</span></div>
-      <input type="range" id="loanRateSlider" min="0.5" max="20" step="0.25" value="5.5">
-    </div>
-    <div class="slider-group">
-      <div class="slider-label"><span>Deposit Rate</span><span class="rate-val" id="depositRateDisplay">1.50%</span></div>
-      <input type="range" id="depositRateSlider" min="0" max="10" step="0.25" value="1.5">
     </div>
     <div class="ecb-rates">
       <span class="ecb-rate ecb-mlf" id="ecbMlf">MLF —%</span>
@@ -170,6 +163,14 @@
     </div>
   </div>
 </div><!-- /tabAccounting -->
+
+<!-- ========== HR Tab ========== -->
+<div class="tab-panel" id="tabHr">
+  <div class="card">
+    <h2>Human Resources</h2>
+    <div id="hrBody" class="hr-body"></div>
+  </div>
+</div><!-- /tabHr -->
 
 </div><!-- /.app -->
 

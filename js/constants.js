@@ -23,6 +23,8 @@ export const LOAN_DEFAULT_DURATION = 8760;
 export const TICKS_PER_MONTH = 730;
 export const DEPO_STABILITY_PROB = 0.002;
 export const DEPO_STABILITY_RATE = 0.0005;
+export const LOANS_PER_OFFICER = 10;
+export const SALARY_PER_OFFICER = 1000;
 
 export const INITIAL = {
   tick: 0,
@@ -54,6 +56,7 @@ export const INITIAL = {
   depositStabilityThreshold: 0,
   loanRequestsPerMonth: 20,
   loanDemandPeakPct: 3,
+  numWorkers: 1,
   ledgerJournal: [], ledgerBalances: {}, ledgerNextId: 1,   _dailyInt: { depoInt: 0, resInt: 0, cbInt: 0 }, ledgerMonthStart: null, ledgerLastMonth: null,
   loanRecords: [],
   nextLoanRecordId: 1,

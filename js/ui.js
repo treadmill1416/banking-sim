@@ -377,6 +377,7 @@ export function updateAccountingTab() {
   // Chart of Accounts
   const coaBody = document.getElementById('acctCoaBody');
   if (coaBody) {
+    const coaPrev = coaBody.querySelector('.acct-body-inner')?.scrollTop || 0;
     coaBody.innerHTML = '<div class="acct-body-inner">' +
       '<div class="acct-section">Assets</div>' +
       acctRow('Cash', b.cash || 0) +
@@ -401,11 +402,14 @@ export function updateAccountingTab() {
       acctRow('Insurance Expense', b.insuranceExpense || 0) +
       acctRow('Default Losses', b.defaultLosses || 0) +
     '</div>';
+    const coaNew = coaBody.querySelector('.acct-body-inner');
+    if (coaNew) coaNew.scrollTop = coaPrev;
   }
 
   // Trial Balance
   const tbBody = document.getElementById('acctTbBody');
   if (tbBody) {
+    const tbPrev = tbBody.querySelector('.acct-body-inner')?.scrollTop || 0;
     const accounts = [
       { label: 'Cash', acct: 'cash' },
       { label: 'Loans Receivable', acct: 'loansReceivable' },
@@ -438,11 +442,14 @@ export function updateAccountingTab() {
       '<tbody>' + rows +
       '<tr class="total"><td>Total</td><td>' + fmtDollar(totalDr) + '</td><td>' + fmtDollar(totalCr) + '</td></tr>' +
       '</tbody></table></div>';
+    const tbNew = tbBody.querySelector('.acct-body-inner');
+    if (tbNew) tbNew.scrollTop = tbPrev;
   }
 
   // Income Statement
   const isBody = document.getElementById('acctIsBody');
   if (isBody) {
+    const isPrev = isBody.querySelector('.acct-body-inner')?.scrollTop || 0;
     const cur = getCurrentMonthPnl(s);
     if (cur) {
       const income = (cur.interestIncome || 0) + (cur.reserveInterestIncome || 0);
@@ -466,32 +473,41 @@ export function updateAccountingTab() {
     } else {
       isBody.innerHTML = '<div class="acct-body-inner"><div class="events-empty">—</div></div>';
     }
+    const isNew = isBody.querySelector('.acct-body-inner');
+    if (isNew) isNew.scrollTop = isPrev;
   }
 
   // Journal Register
   const jrBody = document.getElementById('acctJournalBody');
   if (jrBody) {
-    const journal = s.ledgerJournal;
-    const recent = journal.slice(-50).reverse();
-    if (recent.length === 0) {
-      jrBody.innerHTML = '<div class="acct-body-inner"><div class="events-empty">No entries.</div></div>';
-    } else {
-      let html = '<div class="acct-body-inner">';
-      for (const je of recent) {
-        html += '<div class="jr-entry">';
-        html += '<span class="jr-id">' + je.id + '</span>';
-        html += '<span class="jr-day">Day ' + je.day + '</span>';
-        html += '<span class="jr-desc">' + escapeHtml(je.desc) + '</span>';
-        html += '<div class="jr-lines">';
-        for (const e of je.entries) {
-          const type = ACCOUNT_TYPES[e.account];
-          const label = e.account.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
-          if (e.debit) html += '<div class="jr-line"><span class="jr-acct">' + label + '</span><span class="jr-amt">' + fmtDollar(e.debit) + ' Dr</span></div>';
-          if (e.credit) html += '<div class="jr-line"><span class="jr-acct">' + label + '</span><span class="jr-amt">' + fmtDollar(e.credit) + ' Cr</span></div>';
+    const jlen = s.ledgerJournal.length;
+    if (jlen !== updateAccountingTab._lastJrLen || jrBody.innerHTML === '') {
+      updateAccountingTab._lastJrLen = jlen;
+      const jrPrev = jrBody.querySelector('.acct-body-inner')?.scrollTop || 0;
+      const journal = s.ledgerJournal;
+      const recent = journal.slice(-50).reverse();
+      if (recent.length === 0) {
+        jrBody.innerHTML = '<div class="acct-body-inner"><div class="events-empty">No entries.</div></div>';
+      } else {
+        let html = '<div class="acct-body-inner">';
+        for (const je of recent) {
+          html += '<div class="jr-entry">';
+          html += '<span class="jr-id">' + je.id + '</span>';
+          html += '<span class="jr-day">Day ' + je.day + '</span>';
+          html += '<span class="jr-desc">' + escapeHtml(je.desc) + '</span>';
+          html += '<div class="jr-lines">';
+          for (const e of je.entries) {
+            const type = ACCOUNT_TYPES[e.account];
+            const label = e.account.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
+            if (e.debit) html += '<div class="jr-line"><span class="jr-acct">' + label + '</span><span class="jr-amt">' + fmtDollar(e.debit) + ' Dr</span></div>';
+            if (e.credit) html += '<div class="jr-line"><span class="jr-acct">' + label + '</span><span class="jr-amt">' + fmtDollar(e.credit) + ' Cr</span></div>';
+          }
+          html += '</div></div>';
         }
-        html += '</div></div>';
+        jrBody.innerHTML = html + '</div>';
       }
-      jrBody.innerHTML = html + '</div>';
+      const jrNew = jrBody.querySelector('.acct-body-inner');
+      if (jrNew) jrNew.scrollTop = jrPrev;
     }
   }
 }

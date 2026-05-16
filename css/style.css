@@ -15,6 +15,8 @@ body{font-family:SparkasseWeb,Helvetica,Arial,sans-serif;background:#f2f2f2;colo
 .speed-btn.active{background:rgba(255,255,255,0.25);border-color:#fff;color:#fff}
 .pause-btn{padding:3px 12px;font-size:14px;width:36px;text-align:center}
 .card{background:#fff;border:1px solid #e3e3e3;border-radius:6px;padding:12px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.grid-2col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:700px){.grid-2col{grid-template-columns:1fr}}
 .card h2{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:#767676;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #eee}
 .balance-sheet{display:grid;grid-template-columns:1fr 1fr;gap:0}
 .bs-section{padding:0 4px}
@@ -153,6 +155,7 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 .pnl-row{display:flex;justify-content:space-between;padding:2px 0;font-size:13px;font-variant-numeric:tabular-nums}
 .pnl-label{color:#767676}
 .pnl-value{font-family:'SF Mono','Cascadia Code','Consolas',monospace;font-weight:600}
+.pnl-delta{font-weight:400;color:#9b9b9b;font-size:11px}
 .pnl-income{color:#2d8a4e}
 .pnl-expense{color:#cc0000}
 .pnl-divider{margin:4px 0;border-top:1px solid #eee}

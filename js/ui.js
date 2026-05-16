@@ -105,48 +105,55 @@ function pnlSigned(n) {
   return n >= 0 ? '+' + abs : '−' + abs;
 }
 
-/** Build a single P&L row. */
-function pnlRow(label, value, cls) {
-  return '<div class="pnl-row"><span class="pnl-label">' + label + '</span><span class="pnl-value ' + cls + '">' + value + '</span></div>';
+/** Format signed dollar change in brackets, e.g. "(+$50K)" or "(−$12K)". */
+function pnlDelta(n) {
+  if (n === undefined || n === null || isNaN(n)) return '';
+  if (Math.abs(n) < 0.5) return '  ($0)';
+  const abs = fmtDollar(Math.abs(n));
+  const sign = n >= 0 ? '+' : '−';
+  return '  (' + sign + abs + ')';
 }
 
-/** Build a complete P&L section with all income/expense rows and net total. */
-function pnlSection(title, p, cls) {
-  const net = (p.interestIncome || 0) + (p.reserveInterestIncome || 0) - (p.interestExpense || 0) - (p.cbInterestExpense || 0) - (p.defaultLosses || 0) - (p.salaryExpense || 0) - (p.insuranceExpense || 0);
-  const netCls = net >= 0 ? 'pnl-income' : 'pnl-expense';
-  return '<div class="' + cls + '">' + title + '</div>' +
-    '<div class="pnl-rows">' +
-    pnlRow('Loan Interest', pnlSigned(p.interestIncome), 'pnl-income') +
-    pnlRow('Reserve Interest', pnlSigned(p.reserveInterestIncome), 'pnl-income') +
-    pnlRow('Deposit Interest', pnlSigned(-(p.interestExpense || 0)), 'pnl-expense') +
-    pnlRow('CB Interest', pnlSigned(-(p.cbInterestExpense || 0)), 'pnl-expense') +
-    pnlRow('Salaries', pnlSigned(-(p.salaryExpense || 0)), 'pnl-expense') +
-    pnlRow('Insurance', pnlSigned(-(p.insuranceExpense || 0)), 'pnl-expense') +
-    pnlRow('Defaults', pnlSigned(-(p.defaultLosses || 0)), 'pnl-expense') +
-    '<div class="pnl-divider"></div>' +
-    pnlRow('Net P&L', pnlSigned(net), netCls) +
-    '</div>';
+/** Build a single P&L row, optionally with a delta value shown in brackets. */
+function pnlRow(label, value, cls, delta) {
+  const d = delta !== undefined ? '<span class="pnl-delta">' + pnlDelta(delta) + '</span>' : '';
+  return '<div class="pnl-row"><span class="pnl-label">' + label + '</span><span class="pnl-value ' + cls + '">' + value + d + '</span></div>';
 }
 
-/** Render the Monthly P&L card showing last completed month and current month-to-date. */
+/** Compute net P&L from a period object. */
+function pnlNet(p) {
+  return (p.interestIncome || 0) + (p.reserveInterestIncome || 0) - (p.interestExpense || 0) - (p.cbInterestExpense || 0) - (p.defaultLosses || 0) - (p.salaryExpense || 0) - (p.insuranceExpense || 0);
+}
+
+/** Render the Monthly P&L card showing current month with changes vs previous month in brackets. */
 export function updatePnlDisplay() {
   const s = getState();
   const body = document.getElementById('pnlBody');
   if (!body) return;
-  let html = '';
-  if (s.ledgerLastMonth) {
-    html += pnlSection('Last Month (completed)', s.ledgerLastMonth, 'pnl-progress pnl-progress-prev');
-    html += '<div class="pnl-spacer"></div>';
-  }
   const cur = getCurrentMonthPnl(s);
-  if (cur) {
-    const pct = s.tick - (s.ledgerMonthStart?.tick || 0);
-    const pctDisplay = Math.min(100, Math.round(pct / TICKS_PER_MONTH * 100));
-    html += pnlSection('Month ' + pctDisplay + '% complete', cur, 'pnl-progress');
-  } else {
-    html += '<div class="events-empty">—</div>';
+  if (!cur) {
+    body.innerHTML = '<div class="events-empty">—</div>';
+    return;
   }
-  body.innerHTML = html;
+  const pct = s.tick - (s.ledgerMonthStart?.tick || 0);
+  const pctDisplay = Math.min(100, Math.round(pct / TICKS_PER_MONTH * 100));
+  const prev = s.ledgerLastMonth || {};
+  const netCur = pnlNet(cur);
+  const netPrev = pnlNet(prev);
+  const sign = (v) => -v;
+  body.innerHTML =
+    '<div class="pnl-progress">Month ' + pctDisplay + '% complete</div>' +
+    '<div class="pnl-rows">' +
+    pnlRow('Loan Interest', pnlSigned(cur.interestIncome), 'pnl-income', (cur.interestIncome || 0) - (prev.interestIncome || 0)) +
+    pnlRow('Reserve Interest', pnlSigned(cur.reserveInterestIncome), 'pnl-income', (cur.reserveInterestIncome || 0) - (prev.reserveInterestIncome || 0)) +
+    pnlRow('Deposit Interest', pnlSigned(-(cur.interestExpense || 0)), 'pnl-expense', sign(cur.interestExpense || 0) - sign(prev.interestExpense || 0)) +
+    pnlRow('CB Interest', pnlSigned(-(cur.cbInterestExpense || 0)), 'pnl-expense', sign(cur.cbInterestExpense || 0) - sign(prev.cbInterestExpense || 0)) +
+    pnlRow('Salaries', pnlSigned(-(cur.salaryExpense || 0)), 'pnl-expense', sign(cur.salaryExpense || 0) - sign(prev.salaryExpense || 0)) +
+    pnlRow('Insurance', pnlSigned(-(cur.insuranceExpense || 0)), 'pnl-expense', sign(cur.insuranceExpense || 0) - sign(prev.insuranceExpense || 0)) +
+    pnlRow('Defaults', pnlSigned(-(cur.defaultLosses || 0)), 'pnl-expense', sign(cur.defaultLosses || 0) - sign(prev.defaultLosses || 0)) +
+    '<div class="pnl-divider"></div>' +
+    pnlRow('Net P&L', pnlSigned(netCur), netCur >= 0 ? 'pnl-income' : 'pnl-expense', netCur - netPrev) +
+    '</div>';
 }
 
 /** Render the legacy ledger display (Dashboard tab): balance sheet accounts, P&L accounts, and recent journal entries. */

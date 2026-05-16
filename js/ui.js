@@ -106,18 +106,18 @@ function pnlSigned(n) {
 }
 
 /** Format signed dollar change in brackets, e.g. "(+$50K)" or "(−$12K)". */
-function pnlDelta(n) {
+function pnlDeltaStr(n) {
   if (n === undefined || n === null || isNaN(n)) return '';
-  if (Math.abs(n) < 0.5) return '  ($0)';
+  if (Math.abs(n) < 0.5) return '($0)';
   const abs = fmtDollar(Math.abs(n));
   const sign = n >= 0 ? '+' : '−';
-  return '  (' + sign + abs + ')';
+  return '(' + sign + abs + ')';
 }
 
-/** Build a single P&L row, optionally with a delta value shown in brackets. */
-function pnlRow(label, value, cls, delta) {
-  const d = delta !== undefined ? '<span class="pnl-delta">' + pnlDelta(delta) + '</span>' : '';
-  return '<div class="pnl-row"><span class="pnl-label">' + label + '</span><span class="pnl-value ' + cls + '">' + value + d + '</span></div>';
+/** Build a P&L table row: label | value (right-aligned) | delta (right-aligned). */
+function pnlRow(label, cls, value, delta) {
+  const d = delta !== undefined ? pnlDeltaStr(delta) : '';
+  return '<tr' + (cls ? ' class="' + cls + '"' : '') + '><td>' + label + '</td><td class="pnl-num">' + value + '</td><td class="pnl-del">' + d + '</td></tr>';
 }
 
 /** Compute net P&L from a period object. */
@@ -140,20 +140,22 @@ export function updatePnlDisplay() {
   const prev = s.ledgerLastMonth || {};
   const netCur = pnlNet(cur);
   const netPrev = pnlNet(prev);
-  const sign = (v) => -v;
+  const neg = (v) => -v;
   body.innerHTML =
     '<div class="pnl-progress">Month ' + pctDisplay + '% complete</div>' +
-    '<div class="pnl-rows">' +
-    pnlRow('Loan Interest', pnlSigned(cur.interestIncome), 'pnl-income', (cur.interestIncome || 0) - (prev.interestIncome || 0)) +
-    pnlRow('Reserve Interest', pnlSigned(cur.reserveInterestIncome), 'pnl-income', (cur.reserveInterestIncome || 0) - (prev.reserveInterestIncome || 0)) +
-    pnlRow('Deposit Interest', pnlSigned(-(cur.interestExpense || 0)), 'pnl-expense', sign(cur.interestExpense || 0) - sign(prev.interestExpense || 0)) +
-    pnlRow('CB Interest', pnlSigned(-(cur.cbInterestExpense || 0)), 'pnl-expense', sign(cur.cbInterestExpense || 0) - sign(prev.cbInterestExpense || 0)) +
-    pnlRow('Salaries', pnlSigned(-(cur.salaryExpense || 0)), 'pnl-expense', sign(cur.salaryExpense || 0) - sign(prev.salaryExpense || 0)) +
-    pnlRow('Insurance', pnlSigned(-(cur.insuranceExpense || 0)), 'pnl-expense', sign(cur.insuranceExpense || 0) - sign(prev.insuranceExpense || 0)) +
-    pnlRow('Defaults', pnlSigned(-(cur.defaultLosses || 0)), 'pnl-expense', sign(cur.defaultLosses || 0) - sign(prev.defaultLosses || 0)) +
-    '<div class="pnl-divider"></div>' +
-    pnlRow('Net P&L', pnlSigned(netCur), netCur >= 0 ? 'pnl-income' : 'pnl-expense', netCur - netPrev) +
-    '</div>';
+    '<table class="pnl-table">' +
+    '<thead><tr><th class="pnl-th-l">Item</th><th class="pnl-th-r">Amount</th><th class="pnl-th-r">Change</th></tr></thead>' +
+    '<tbody>' +
+    pnlRow('Loan Interest', 'pnl-income', pnlSigned(cur.interestIncome), (cur.interestIncome || 0) - (prev.interestIncome || 0)) +
+    pnlRow('Reserve Interest', 'pnl-income', pnlSigned(cur.reserveInterestIncome), (cur.reserveInterestIncome || 0) - (prev.reserveInterestIncome || 0)) +
+    pnlRow('Deposit Interest', 'pnl-expense', pnlSigned(-(cur.interestExpense || 0)), neg(cur.interestExpense || 0) - neg(prev.interestExpense || 0)) +
+    pnlRow('CB Interest', 'pnl-expense', pnlSigned(-(cur.cbInterestExpense || 0)), neg(cur.cbInterestExpense || 0) - neg(prev.cbInterestExpense || 0)) +
+    pnlRow('Salaries', 'pnl-expense', pnlSigned(-(cur.salaryExpense || 0)), neg(cur.salaryExpense || 0) - neg(prev.salaryExpense || 0)) +
+    pnlRow('Insurance', 'pnl-expense', pnlSigned(-(cur.insuranceExpense || 0)), neg(cur.insuranceExpense || 0) - neg(prev.insuranceExpense || 0)) +
+    pnlRow('Defaults', 'pnl-expense', pnlSigned(-(cur.defaultLosses || 0)), neg(cur.defaultLosses || 0) - neg(prev.defaultLosses || 0)) +
+    '<tr class="pnl-divider-row"><td colspan="3"></td></tr>' +
+    pnlRow('Net P&L', netCur >= 0 ? 'pnl-income pnl-total' : 'pnl-expense pnl-total', pnlSigned(netCur), netCur - netPrev) +
+    '</tbody></table>';
 }
 
 /** Render the legacy ledger display (Dashboard tab): balance sheet accounts, P&L accounts, and recent journal entries. */

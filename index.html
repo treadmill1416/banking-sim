@@ -56,21 +56,42 @@
 <!-- Balance Sheet -->
 <div class="card">
   <h2>Balance Sheet</h2>
-  <div class="balance-sheet">
-    <div class="bs-section bs-assets">
-      <div class="bs-header">Assets</div>
-      <div class="bs-row"><span class="label">Reserves</span><span class="value" id="bsReserves">—</span></div>
-      <div class="bs-row"><span class="label">Loans</span><span class="value" id="bsLoans">—</span></div>
-      <div class="bs-row total"><span class="label">Total</span><span class="value" id="bsAssetsTotal">—</span></div>
-    </div>
-    <div class="bs-section bs-liabilities">
-      <div class="bs-header">Liabilities</div>
-      <div class="bs-row"><span class="label">Deposits</span><span class="value" id="bsDeposits">—</span></div>
-      <div class="bs-row"><span class="label">CB Borrowing</span><span class="value" id="bsCbBorrowing">—</span></div>
-      <div class="bs-row"><span class="label">Equity</span>        <span class="value" id="bsEquity" style="color:#2d8a4e">—</span></div>
-      <div class="bs-row total"><span class="label">Total</span><span class="value" id="bsLiabilitiesTotal">—</span></div>
-    </div>
-  </div>
+  <table class="bs-table">
+    <thead>
+      <tr>
+        <th class="bs-th bs-th-asset">Assets</th>
+        <th class="bs-th-num"></th>
+        <th class="bs-th bs-th-liab">Liabilities</th>
+        <th class="bs-th-num"></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="bs-label">Reserves</td>
+        <td class="bs-num" id="bsReserves">—</td>
+        <td class="bs-label">Deposits</td>
+        <td class="bs-num" id="bsDeposits">—</td>
+      </tr>
+      <tr>
+        <td class="bs-label">Loans</td>
+        <td class="bs-num" id="bsLoans">—</td>
+        <td class="bs-label">CB Borrowing</td>
+        <td class="bs-num" id="bsCbBorrowing">—</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td></td>
+        <td class="bs-label">Equity</td>
+        <td class="bs-num" id="bsEquity" style="color:#2d8a4e">—</td>
+      </tr>
+      <tr class="bs-total">
+        <td class="bs-label">Total</td>
+        <td class="bs-num" id="bsAssetsTotal">—</td>
+        <td class="bs-label">Total</td>
+        <td class="bs-num" id="bsLiabilitiesTotal">—</td>
+      </tr>
+    </tbody>
+  </table>
 </div>
 
 <!-- Monthly P&L and configuration panels -->

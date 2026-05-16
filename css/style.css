@@ -18,15 +18,17 @@ body{font-family:SparkasseWeb,Helvetica,Arial,sans-serif;background:#f2f2f2;colo
 .grid-2col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media(max-width:700px){.grid-2col{grid-template-columns:1fr}}
 .card h2{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:#767676;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #eee}
-.balance-sheet{display:grid;grid-template-columns:1fr 1fr;gap:0}
-.bs-section{padding:0 4px}
-.bs-header{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px}
-.bs-assets .bs-header{color:#0071d4}
-.bs-liabilities .bs-header{color:#8b5cf6}
-.bs-row{display:flex;justify-content:space-between;padding:3px 0;font-size:13px;font-variant-numeric:tabular-nums}
-.bs-row.total{border-top:1px solid #e3e3e3;margin-top:4px;padding-top:5px;font-weight:600;color:#292929}
-.bs-row .label{color:#767676}
-.bs-row .value{font-family:'SF Mono','Cascadia Code','Consolas',monospace;color:#292929}
+.bs-table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+.bs-table th{padding:2px 6px 6px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px}
+.bs-th-asset{text-align:left;color:#0071d4}
+.bs-th-liab{text-align:left;color:#8b5cf6}
+.bs-th-num{width:35%}
+.bs-table td{padding:2px 6px}
+.bs-label{color:#767676}
+.bs-num{text-align:right;font-family:'SF Mono','Cascadia Code','Consolas',monospace;color:#292929}
+.bs-total td{padding-top:5px;border-top:1px solid #e3e3e3}
+.bs-total .bs-label{font-weight:600;color:#292929}
+.bs-total .bs-num{font-weight:600}
 .metrics-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px}
 .metric{padding:2px 0}
 .metric-label{font-size:11px;color:#767676;text-transform:uppercase;letter-spacing:0.3px}
@@ -149,18 +151,21 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 /* === P&L Card === */
 .pnl-card{margin-bottom:12px}
 .pnl-progress{font-size:10px;color:#767676;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.3px}
-.pnl-progress-prev{color:#0071d4;margin-top:0}
-.pnl-spacer{height:12px;border-top:2px solid #eee;margin:8px 0}
-.pnl-rows{display:flex;flex-direction:column;gap:2px}
-.pnl-row{display:flex;justify-content:space-between;padding:2px 0;font-size:13px;font-variant-numeric:tabular-nums}
-.pnl-label{color:#767676}
-.pnl-value{font-family:'SF Mono','Cascadia Code','Consolas',monospace;font-weight:600}
-.pnl-delta{font-weight:400;color:#9b9b9b;font-size:11px}
-.pnl-income{color:#2d8a4e}
-.pnl-expense{color:#cc0000}
-.pnl-divider{margin:4px 0;border-top:1px solid #eee}
-.pnl-row.pnl-total{padding-top:4px;font-size:14px}
-.pnl-row.pnl-total .pnl-label{color:#292929;font-weight:600}
+.pnl-table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+.pnl-table th{padding:2px 6px;font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#9b9b9b;font-weight:600;border-bottom:1px solid #eee}
+.pnl-th-l{text-align:left}
+.pnl-th-r{text-align:right}
+.pnl-table td{padding:2px 6px}
+.pnl-table td:first-child{color:#767676}
+.pnl-num{text-align:right;font-family:'SF Mono','Cascadia Code','Consolas',monospace;font-weight:600}
+.pnl-del{text-align:right;font-weight:400;color:#9b9b9b;font-size:11px;font-family:'SF Mono','Cascadia Code','Consolas',monospace}
+.pnl-income .pnl-num{color:#2d8a4e}
+.pnl-expense .pnl-num{color:#cc0000}
+.pnl-divider-row td{height:8px;border-bottom:1px solid #eee}
+.pnl-total td{font-weight:600;padding-top:4px}
+.pnl-total td:first-child{color:#292929}
+.pnl-total.pnl-income .pnl-num{color:#2d8a4e}
+.pnl-total.pnl-expense .pnl-num{color:#cc0000}
 
 /* === Charts (reserve ratio, NIM, equity) === */
 .charts-section{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}

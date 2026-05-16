@@ -68,6 +68,7 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 .debug-btn:hover{background:#f5c6c6}
 .debug-equity{background:#f8f8f8;border:1px solid #e3e3e3;border-radius:4px;padding:6px 12px;font-size:12px;font-family:'SF Mono','Cascadia Code','Consolas',monospace;display:flex;align-items:center;gap:8px;white-space:nowrap}
 .debug-equity .eq-val{color:#2d8a4e;font-weight:700}
+.debug-equity .eq-val-neg{color:#cc0000}
 .debug-equity .eq-chg-pos{color:#2d8a4e}
 .debug-equity .eq-chg-neg{color:#cc0000}
 .debug-equity .eq-chg-zero{color:#9b9b9b}

@@ -284,6 +284,7 @@ function bindEvents() {
       this.classList.add('active');
       document.getElementById('tab' + this.dataset.tab.charAt(0).toUpperCase() + this.dataset.tab.slice(1)).classList.add('active');
       if (this.dataset.tab === 'accounting') updateAccountingTab();
+      if (this.dataset.tab === 'loans') { updateLoanApps(); updateAcceptedLoans(); }
       if (this.dataset.tab === 'hr') updateHrTab();
     });
   });

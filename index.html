@@ -39,6 +39,7 @@
 <div class="tab-bar">
   <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
   <button class="tab-btn" data-tab="accounting">Accounting</button>
+  <button class="tab-btn" data-tab="loans">Loans</button>
   <button class="tab-btn" data-tab="policies">Policies</button>
   <button class="tab-btn" data-tab="hr">HR</button>
 </div>
@@ -52,36 +53,22 @@
   <div class="chart-card"><svg id="chartEquity"></svg></div>
 </div>
 
-<!-- Main grid: balance sheet, metrics & rates, accepted loans, loan applications -->
-<div class="grid-main">
-      <div class="card">
-    <h2>Balance Sheet</h2>
-    <div class="balance-sheet">
-      <div class="bs-section bs-assets">
-        <div class="bs-header">Assets</div>
-        <div class="bs-row"><span class="label">Reserves</span><span class="value" id="bsReserves">—</span></div>
-        <div class="bs-row"><span class="label">Loans</span><span class="value" id="bsLoans">—</span></div>
-        <div class="bs-row total"><span class="label">Total</span><span class="value" id="bsAssetsTotal">—</span></div>
-      </div>
-      <div class="bs-section bs-liabilities">
-        <div class="bs-header">Liabilities</div>
-        <div class="bs-row"><span class="label">Deposits</span><span class="value" id="bsDeposits">—</span></div>
-        <div class="bs-row"><span class="label">CB Borrowing</span><span class="value" id="bsCbBorrowing">—</span></div>
-        <div class="bs-row"><span class="label">Equity</span>        <span class="value" id="bsEquity" style="color:#2d8a4e">—</span></div>
-        <div class="bs-row total"><span class="label">Total</span><span class="value" id="bsLiabilitiesTotal">—</span></div>
-      </div>
+<!-- Balance Sheet -->
+<div class="card">
+  <h2>Balance Sheet</h2>
+  <div class="balance-sheet">
+    <div class="bs-section bs-assets">
+      <div class="bs-header">Assets</div>
+      <div class="bs-row"><span class="label">Reserves</span><span class="value" id="bsReserves">—</span></div>
+      <div class="bs-row"><span class="label">Loans</span><span class="value" id="bsLoans">—</span></div>
+      <div class="bs-row total"><span class="label">Total</span><span class="value" id="bsAssetsTotal">—</span></div>
     </div>
-  </div>
-
-  <div class="card accepted-loans">
-    <h2>Accepted Loans <span id="acceptedLoanCount" style="font-size:11px;font-weight:400;text-transform:none;color:#9b9b9b"></span></h2>
-    <svg id="defaultRateChart" style="width:100%;height:80px;margin-bottom:6px"></svg>
-    <div id="acceptedLoansBody"><div class="events-empty">Loading…</div></div>
-  </div>
-  <div class="card loan-apps">
-    <h2>Loan Applications</h2>
-    <div class="loan-apps-list" id="loanAppsList">
-      <div class="events-empty">No pending loan applications.</div>
+    <div class="bs-section bs-liabilities">
+      <div class="bs-header">Liabilities</div>
+      <div class="bs-row"><span class="label">Deposits</span><span class="value" id="bsDeposits">—</span></div>
+      <div class="bs-row"><span class="label">CB Borrowing</span><span class="value" id="bsCbBorrowing">—</span></div>
+      <div class="bs-row"><span class="label">Equity</span>        <span class="value" id="bsEquity" style="color:#2d8a4e">—</span></div>
+      <div class="bs-row total"><span class="label">Total</span><span class="value" id="bsLiabilitiesTotal">—</span></div>
     </div>
   </div>
 </div>
@@ -131,24 +118,46 @@
   </div>
 </div><!-- /tabAccounting -->
 
-<!-- ========== Policies Tab ========== -->
-<div class="tab-panel" id="tabPolicies">
+<!-- ========== Loans Tab ========== -->
+<div class="tab-panel" id="tabLoans">
   <div class="card">
-    <h2>Interest Rate Policies</h2>
+    <h2>Lending Policies</h2>
     <div class="policies-body">
       <div class="slider-group">
         <div class="slider-label"><span>Standard Loan Rate</span><span class="rate-val" id="loanRateDisplay">5.50%</span></div>
         <input type="range" id="loanRateSlider" min="0.5" max="20" step="0.25" value="5.5">
-      </div>
-      <div class="slider-group">
-        <div class="slider-label"><span>Deposit Rate</span><span class="rate-val" id="depositRateDisplay">1.50%</span></div>
-        <input type="range" id="depositRateSlider" min="0" max="10" step="0.25" value="1.5">
       </div>
       <div class="policies-divider"></div>
       <div class="slider-group">
         <div class="slider-label"><span>Auto-accept Risk Threshold</span><span class="rate-val" id="autoAcceptDisplay">0.00%</span></div>
         <input type="range" id="autoAcceptSlider" min="0" max="25" step="0.5" value="0">
         <div class="slider-hint">Loan requests with default risk at or below this threshold are auto-approved at the standard rate.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card accepted-loans">
+    <h2>Accepted Loans <span id="acceptedLoanCount" style="font-size:11px;font-weight:400;text-transform:none;color:#9b9b9b"></span></h2>
+    <svg id="defaultRateChart" style="width:100%;height:80px;margin-bottom:6px"></svg>
+    <div id="acceptedLoansBody"><div class="events-empty">Loading…</div></div>
+  </div>
+
+  <div class="card loan-apps">
+    <h2>Loan Applications</h2>
+    <div class="loan-apps-list" id="loanAppsList">
+      <div class="events-empty">No pending loan applications.</div>
+    </div>
+  </div>
+</div><!-- /tabLoans -->
+
+<!-- ========== Policies Tab ========== -->
+<div class="tab-panel" id="tabPolicies">
+  <div class="card">
+    <h2>Interest Rate Policies</h2>
+    <div class="policies-body">
+      <div class="slider-group">
+        <div class="slider-label"><span>Deposit Rate</span><span class="rate-val" id="depositRateDisplay">1.50%</span></div>
+        <input type="range" id="depositRateSlider" min="0" max="10" step="0.25" value="1.5">
       </div>
       <div class="policies-divider"></div>
       <div class="slider-group">

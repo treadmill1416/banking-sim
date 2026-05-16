@@ -14,8 +14,6 @@ body{font-family:SparkasseWeb,Helvetica,Arial,sans-serif;background:#f2f2f2;colo
 .speed-btn:hover,.pause-btn:hover{background:rgba(255,255,255,0.2);border-color:rgba(255,255,255,0.5)}
 .speed-btn.active{background:rgba(255,255,255,0.25);border-color:#fff;color:#fff}
 .pause-btn{padding:3px 12px;font-size:14px;width:36px;text-align:center}
-.grid-main{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;margin-top:12px}
-@media(max-width:700px){.grid-main{grid-template-columns:1fr}}
 .card{background:#fff;border:1px solid #e3e3e3;border-radius:6px;padding:12px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
 .card h2{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:#767676;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #eee}
 .balance-sheet{display:grid;grid-template-columns:1fr 1fr;gap:0}

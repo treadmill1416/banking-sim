@@ -124,9 +124,10 @@ export function tryDepositStability(s) {
  *  @param {object} s
  *  @param {number} rate - Proposed loan rate
  *  @returns {boolean} */
-export function customerRefuses(s, rate) {
-  const spread = Math.max(0, rate - s.ecbMroRate);
-  const refusalProb = Math.max(5, Math.min(95, spread * REGIME_MULTIPLIERS[s.regime] * 8));
+export function customerRefuses(s, rate, entry) {
+  const riskDiscount = (entry?.defaultProb || 0) * 0.3;
+  const effectiveSpread = Math.max(0, rate - s.ecbMroRate - riskDiscount);
+  const refusalProb = Math.max(5, Math.min(95, effectiveSpread * REGIME_MULTIPLIERS[s.regime] * 8));
   return Math.random() < refusalProb / 100;
 }
 
@@ -179,7 +180,7 @@ export function processSalaries(s) {
  *  @param {number} rate - Approved interest rate */
 export function processLoanApproval(s, entry, rate) {
   entry.approved = true;
-  if (customerRefuses(s, rate)) {
+  if (customerRefuses(s, rate, entry)) {
     entry.msg += ' — CUSTOMER REFUSED';
     entry.cls = 'event-expense';
     addEvent(s, 'loan', 'Customer refused loan of ' + fmtDollar(entry.loanAmount) + ' at ' + rate.toFixed(2) + '%', 'event-expense');

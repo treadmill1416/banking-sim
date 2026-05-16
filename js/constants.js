@@ -60,7 +60,8 @@ export const INITIAL = {
   ledgerJournal: [], ledgerBalances: {}, ledgerNextId: 1,   _dailyInt: { depoInt: 0, resInt: 0, cbInt: 0 }, ledgerMonthStart: null, ledgerLastMonth: null,
   loanRecords: [],
   nextLoanRecordId: 1,
-  defaultRateHistory: []
+  defaultRateHistory: [],
+  debugMonthStartEquity: 0
 };
 
 export const REGIME_MULTIPLIERS = { boom: 0.5, normal: 1, recession: 2.5 };

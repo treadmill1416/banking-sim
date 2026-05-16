@@ -61,9 +61,14 @@ input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;bac
 .collapse-btn:hover{color:#f0f6fc}
 
 /* === Tab Navigation === */
-.debug-bar{display:flex;gap:8px;margin-bottom:8px}
+.debug-bar{display:flex;gap:8px;margin-bottom:8px;align-items:stretch}
 .debug-btn{flex:1;padding:8px 0;font-size:13px;font-weight:700;border:1px solid #da3633;border-radius:6px;background:#3d0f0f;color:#f85149;cursor:pointer;font-family:inherit;transition:all .15s;text-align:center}
 .debug-btn:hover{background:#5c1a1a}
+.debug-equity{background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:6px 12px;font-size:12px;font-family:'SF Mono','Cascadia Code','Consolas',monospace;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.debug-equity .eq-val{color:#3fb950;font-weight:700}
+.debug-equity .eq-chg-pos{color:#3fb950}
+.debug-equity .eq-chg-neg{color:#f85149}
+.debug-equity .eq-chg-zero{color:#8b949e}
 .tab-bar{display:flex;gap:0;margin-bottom:12px;border-bottom:1px solid #30363d}
 .tab-btn{padding:7px 18px;font-size:13px;font-weight:600;border:1px solid transparent;border-bottom:none;border-radius:4px 4px 0 0;background:transparent;color:#8b949e;cursor:pointer;font-family:inherit;transition:all .15s}
 .tab-btn:hover{color:#c9d1d9;background:#161b22}

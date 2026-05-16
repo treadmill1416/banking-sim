@@ -170,6 +170,7 @@ export function getCurrentMonthPnl(s) {
 export function updateLedgerPnl(s) {
   const current = snapshotIncomeAccounts(s);
   if (s.tick - (s.ledgerMonthStart?.tick || 0) >= TICKS_PER_MONTH) {
+    s.debugMonthStartEquity = getEquity(s);
     s.ledgerLastMonth = {
       interestIncome: current.interestIncome - s.ledgerMonthStart.interestIncome,
       reserveInterestIncome: current.reserveInterestIncome - s.ledgerMonthStart.reserveInterestIncome,

@@ -211,7 +211,7 @@ export function updateLoanApps() {
     html += '<div class="hr-warn">⚠ All loan officers are occupied (' + active + '/' + capacity + '). Hire more to process additional loans.</div>';
   }
   for (const e of pending) {
-    const rate = e.proposedRate || s.loanRate;
+    const rate = s.loanRate;
     const interest = e.loanAmount * rate / 100;
     const months = e.durationMonths || 12;
     const maturityTick = s.tick + months * TICKS_PER_MONTH;

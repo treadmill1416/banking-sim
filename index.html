@@ -31,6 +31,7 @@
 <div class="tab-bar">
   <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
   <button class="tab-btn" data-tab="accounting">Accounting</button>
+  <button class="tab-btn" data-tab="policies">Policies</button>
   <button class="tab-btn" data-tab="hr">HR</button>
 </div>
 
@@ -40,7 +41,6 @@
 <!-- Charts: reserve ratio, NIM, equity history -->
 <div class="charts-section">
   <div class="chart-card"><svg id="chartReserves"></svg></div>
-  <div class="chart-card"><svg id="chartNim"></svg></div>
   <div class="chart-card"><svg id="chartEquity"></svg></div>
 </div>
 
@@ -106,13 +106,6 @@
   </div>
   <div class="card loan-apps">
     <h2>Loan Applications</h2>
-    <div class="aa-row">
-      <div class="slider-label">
-        <span>Auto-accept threshold</span>
-        <span class="rate-val" id="autoAcceptDisplay">0.00%</span>
-      </div>
-      <input type="range" id="autoAcceptSlider" min="0" max="25" step="0.5" value="0">
-    </div>
     <div class="loan-apps-list" id="loanAppsList">
       <div class="events-empty">No pending loan applications.</div>
     </div>
@@ -163,6 +156,39 @@
     </div>
   </div>
 </div><!-- /tabAccounting -->
+
+<!-- ========== Policies Tab ========== -->
+<div class="tab-panel" id="tabPolicies">
+  <div class="card">
+    <h2>Interest Rate Policies</h2>
+    <div class="policies-body">
+      <div class="slider-group">
+        <div class="slider-label"><span>Standard Loan Rate</span><span class="rate-val" id="loanRateDisplay">5.50%</span></div>
+        <input type="range" id="loanRateSlider" min="0.5" max="20" step="0.25" value="5.5">
+      </div>
+      <div class="slider-group">
+        <div class="slider-label"><span>Deposit Rate</span><span class="rate-val" id="depositRateDisplay">1.50%</span></div>
+        <input type="range" id="depositRateSlider" min="0" max="10" step="0.25" value="1.5">
+      </div>
+      <div class="policies-divider"></div>
+      <div class="slider-group">
+        <div class="slider-label"><span>Auto-accept Risk Threshold</span><span class="rate-val" id="autoAcceptDisplay">0.00%</span></div>
+        <input type="range" id="autoAcceptSlider" min="0" max="25" step="0.5" value="0">
+        <div class="slider-hint">Loan requests with default risk at or below this threshold are auto-approved at the standard rate.</div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Net Interest Margin</h2>
+    <div class="nim-card-body">
+      <div class="nim-chart-wrapper"><svg id="chartNim"></svg></div>
+      <div class="nim-explanation">
+        <p><strong>Net Interest Margin (NIM)</strong> measures the difference between interest income earned on loans and reserves versus interest paid on deposits and CB borrowing, relative to total earning assets. It is annualized and expressed as a percentage.</p>
+        <p>A positive NIM means your bank is earning more on its assets than it costs to fund them. A narrowing NIM signals compressed margins — consider adjusting loan or deposit rates.</p>
+      </div>
+    </div>
+  </div>
+</div><!-- /tabPolicies -->
 
 <!-- ========== HR Tab ========== -->
 <div class="tab-panel" id="tabHr">

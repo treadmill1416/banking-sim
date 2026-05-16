@@ -1,5 +1,7 @@
 /** @module ledger - Double-entry accounting system. Manages chart of accounts, journal entries (debit/credit balancing), daily interest posting, and month-to-month P&L tracking. */
 
+import { TICKS_PER_MONTH } from './constants.js';
+
 /** Account type classification. Determines whether a balance increases on debit (asset, expense) or credit (liability, equity, income). */
 export const ACCOUNT_TYPES = {
   cash: 'asset',
@@ -87,7 +89,7 @@ export function postJournal(s, entries, desc) {
   }
   s.ledgerJournal.push({
     id: 'je-' + (s.ledgerNextId++),
-    day: Math.floor(s.tick / 24),
+    day: Math.floor(s.tick / 2),
     tick: s.tick,
     entries: entries.map(e => ({ ...e })),
     desc,
@@ -167,7 +169,7 @@ export function getCurrentMonthPnl(s) {
  *  @param {object} s */
 export function updateLedgerPnl(s) {
   const current = snapshotIncomeAccounts(s);
-  if (s.tick - (s.ledgerMonthStart?.tick || 0) >= 730) {
+  if (s.tick - (s.ledgerMonthStart?.tick || 0) >= TICKS_PER_MONTH) {
     s.ledgerLastMonth = {
       interestIncome: current.interestIncome - s.ledgerMonthStart.interestIncome,
       reserveInterestIncome: current.reserveInterestIncome - s.ledgerMonthStart.reserveInterestIncome,

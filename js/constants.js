@@ -1,12 +1,12 @@
 /** @module constants - Central game configuration. All tunable parameters, probabilities, regime tables, and initial state defaults live here. */
 
 export const SAVE_KEY = 'bankrunner-state';
-export const TICKS_PER_QUARTER = 2190;
-export const TICKS_PER_YEAR = 8760;
+export const TICKS_PER_QUARTER = 180;
+export const TICKS_PER_YEAR = 720;
 export const HISTORY_MAX = 500;
 export const EVENT_LOG_MAX = 200;
-export const NPL_WINDOW = 720;
-export const DEFAULT_WINDOW = 7200;
+export const NPL_WINDOW = 60;
+export const DEFAULT_WINDOW = 600;
 export const RESERVE_RATIO_TARGET = 0.01;
 export const CB_SPREAD = 0.25;
 export const RATE_MIN = 0;
@@ -18,9 +18,9 @@ export const DEPO_RATE_MIN = 0;
 export const DEPO_RATE_MAX = 10;
 export const DEPO_RATE_STEP = 0.25;
 
-export const LOAN_EXPIRY_TICKS = 730;
-export const LOAN_DEFAULT_DURATION = 8760;
-export const TICKS_PER_MONTH = 730;
+export const LOAN_EXPIRY_TICKS = 60;
+export const LOAN_DEFAULT_DURATION = 720;
+export const TICKS_PER_MONTH = 60;
 export const DEPO_STABILITY_PROB = 0.002;
 export const DEPO_STABILITY_RATE = 0.0005;
 export const LOANS_PER_OFFICER = 10;

@@ -36,7 +36,7 @@ function tick() {
   expireOldLoans(s);
   checkReserves(s);
 
-  if (s.tick % 24 === 0) postDailyInterest(s);
+  if (s.tick % 2 === 0) postDailyInterest(s);
 
   s.defaultRateHistory.push(computeDefaultRate(s));
   if (s.defaultRateHistory.length > HISTORY_MAX) s.defaultRateHistory.shift();
@@ -48,7 +48,7 @@ function tick() {
 
   updateUI();
   updatePnlDisplay();
-  if (s.tick % 24 === 0) { updateLedgerDisplay(); updateAccountingTab(); }
+  if (s.tick % 2 === 0) { updateLedgerDisplay(); updateAccountingTab(); }
   updateCharts();
   updateEventLog();
   updateLoanApps();

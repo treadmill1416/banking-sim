@@ -34,7 +34,7 @@ export function fmtTicks(ticks) {
   const y = Math.floor(ticks / TICKS_PER_YEAR);
   const rem = ticks % TICKS_PER_YEAR;
   const mo = Math.floor(rem / TICKS_PER_MONTH);
-  const d = Math.floor((rem % TICKS_PER_MONTH) / 24);
+  const d = Math.floor((rem % TICKS_PER_MONTH) / 2);
   const parts = [];
   if (y > 0) parts.push(y + 'y');
   if (mo > 0) parts.push(mo + 'mo');
@@ -56,7 +56,7 @@ export function escapeHtml(s) {
  *  @returns {string} */
 export function gameDateStr(tick) {
   const start = new Date(2026, 0, 1);
-  const d = new Date(start.getTime() + tick * 3600000);
+  const d = new Date(start.getTime() + tick * 43200000);
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   return months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear() + ' ' + String(d.getHours()).padStart(2,'0') + ':00';
 }

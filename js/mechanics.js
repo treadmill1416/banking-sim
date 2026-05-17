@@ -260,7 +260,7 @@ export function processLoanPayments(s) {
     }
 
     postJournal(s, [
-      { account: 'deposits', debit: total },
+      { account: 'cash', debit: total },
       { account: 'loansReceivable', credit: principal },
       { account: 'interestIncome', credit: interest },
     ], 'Monthly payment - ' + lr.id);

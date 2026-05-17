@@ -107,6 +107,16 @@ export function postJournal(s, entries, desc) {
     const deficit = -(bal.cash || 0);
     bal.cash = 0;
     bal.cbBorrowing = (bal.cbBorrowing || 0) + deficit;
+    s.ledgerJournal.push({
+      id: 'je-' + (s.ledgerNextId++),
+      day: Math.floor(s.tick / 2),
+      tick: s.tick,
+      entries: [
+        { account: 'cash', debit: deficit },
+        { account: 'cbBorrowing', credit: deficit },
+      ],
+      desc: 'Emergency CB borrowing (balance guard)',
+    });
   }
 }
 

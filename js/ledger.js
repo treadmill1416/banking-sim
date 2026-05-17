@@ -96,6 +96,18 @@ export function postJournal(s, entries, desc) {
     entries: entries.map(e => ({ ...e })),
     desc,
   });
+
+  const bal = s.ledgerBalances;
+  if ((bal.deposits || 0) < 0) {
+    const excess = -(bal.deposits || 0);
+    bal.deposits = 0;
+    bal.cash = (bal.cash || 0) + excess;
+  }
+  if ((bal.cash || 0) < 0) {
+    const deficit = -(bal.cash || 0);
+    bal.cash = 0;
+    bal.cbBorrowing = (bal.cbBorrowing || 0) + deficit;
+  }
 }
 
 /** Get the current balance of any account.

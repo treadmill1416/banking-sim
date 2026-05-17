@@ -33,6 +33,7 @@
   <div class="debug-equity" id="debugMro">—</div>
   <button class="debug-btn" id="defaultAllLoansBtn">Default All Loans</button>
   <button class="debug-btn" id="startBankRunBtn">Start Bank Run</button>
+  <button class="debug-btn" id="finishGameBtn">Finish Game</button>
 </div>
 
 <!-- Tab bar: Dashboard / Accounting -->
@@ -94,10 +95,16 @@
   </table>
 </div>
 
-<!-- Monthly P&L and configuration panels -->
+<!-- Monthly P&L -->
 <div class="card pnl-card">
   <h2>Monthly P&amp;L</h2>
   <div id="pnlBody"><div class="events-empty">—</div></div>
+</div>
+
+<!-- Regulatory Compliance -->
+<div class="card compliance-card">
+  <h2>Regulatory Compliance</h2>
+  <div id="complianceBody"><div class="events-empty">—</div></div>
 </div>
 
 <div class="card event-log" id="eventLog">
@@ -250,6 +257,19 @@
 </div><!-- /tabHr -->
 
 </div><!-- /.app -->
+
+<!-- Game Over overlay -->
+<div class="gameover-overlay" id="gameoverOverlay" style="display:none">
+  <div class="gameover-modal">
+    <div class="gameover-header">
+      <h2>Game Over</h2>
+    </div>
+    <div class="gameover-body" id="gameoverBody"></div>
+    <div class="gameover-footer">
+      <button class="admin-btn primary" id="gameoverRestart" style="padding:8px 28px;font-size:14px">Restart Game</button>
+    </div>
+  </div>
+</div>
 
 <!-- Admin overlay: visible only when debug flag is true, toggled by admin.js -->
 <div class="admin-overlay" id="adminOverlay" style="display:none">

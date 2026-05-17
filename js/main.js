@@ -135,7 +135,7 @@ function togglePause() {
 }
 
 /** Reset game to initial state after user confirmation. Reinitializes ledger, loan records, and history. */
-function resetGame() {
+export function resetGame() {
   if (!confirm('Reset game? All progress will be lost.')) return;
   if (intervalId) { clearInterval(intervalId); intervalId = null; }
   resetState();

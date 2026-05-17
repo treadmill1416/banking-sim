@@ -342,11 +342,21 @@ export function recomputeWeightedLoanRate(s) {
 /** Auto-borrow from CB if reserves fall below requirement and auto-borrowing is enabled. Otherwise emit a warning event.
  *  @param {object} s */
 export function checkReserves(s) {
-  const req = requiredReserves(s);
   const cash = getBalance(s, 'cash');
-  if (cash < req) {
+  if (cash < 0) {
+    const deficit = -cash;
+    postJournal(s, [
+      { account: 'cash', debit: deficit },
+      { account: 'cbBorrowing', credit: deficit },
+    ], 'Emergency CB borrowing (cash went negative)');
+    addEvent(s, 'cb', 'Emergency auto-borrowed ' + fmtDollar(deficit) + ' from CB (cash went negative!)', 'event-expense');
+  }
+  const req = requiredReserves(s);
+  const cash2 = getBalance(s, 'cash');
+  if (cash2 < req) {
     if (s.autoCbBorrowing) {
-      const deficit = req - cash;
+      const buffer = getBalance(s, 'deposits') * 0.001;
+      const deficit = req + buffer - cash2;
       postJournal(s, [
         { account: 'cash', debit: deficit },
         { account: 'cbBorrowing', credit: deficit },

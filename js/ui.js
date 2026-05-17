@@ -67,6 +67,71 @@ export function updateUI() {
     }
     cntContainer.textContent = active + ' active / ' + repaid + ' repaid / ' + defaulted + ' defaulted';
   }
+  updateCompliance(s);
+}
+
+/** Compliance check definitions: label, pass function, formatter */
+const COMPLIANCE_CHECKS = [
+  {
+    label: 'Solvency',
+    desc: 'Equity ≥ $0',
+    pass: (s) => getBalance(s, 'equity') + getBalance(s, 'retainedEarnings') + getNetIncome(s) >= 0,
+    val: (s) => equity(s),
+    fmt: (v) => fmtDollar(v),
+  },
+  {
+    label: 'Capital Adequacy',
+    desc: 'Equity / Loans ≥ 8%',
+    pass: (s) => { const l = getBalance(s, 'loansReceivable'); return l > 0 ? equity(s) / l >= 0.08 : true; },
+    val: (s) => { const l = getBalance(s, 'loansReceivable'); return l > 0 ? (equity(s) / l) * 100 : 100; },
+    fmt: (v) => v.toFixed(2) + '%',
+  },
+  {
+    label: 'Reserve Requirement',
+    desc: 'Cash / Deposits ≥ 1%',
+    pass: (s) => reserveRatio(s) >= 1,
+    val: (s) => reserveRatio(s),
+    fmt: (v) => v.toFixed(2) + '%',
+  },
+  {
+    label: 'Liquidity',
+    desc: 'Cash / Deposits ≥ 5%',
+    pass: (s) => reserveRatio(s) >= 5,
+    val: (s) => reserveRatio(s),
+    fmt: (v) => v.toFixed(2) + '%',
+  },
+  {
+    label: 'NPL Ratio',
+    desc: 'Default rate ≤ 5%',
+    pass: (s) => trailingNpl(s) <= 5,
+    val: (s) => trailingNpl(s),
+    fmt: (v) => v.toFixed(2) + '%',
+  },
+  {
+    label: 'Loan Officer Capacity',
+    desc: 'Active loans ≤ capacity',
+    pass: (s) => countActiveLoans(s) <= activeLoanCapacity(s),
+    val: (s) => countActiveLoans(s) + ' / ' + activeLoanCapacity(s),
+    fmt: (v) => v,
+  },
+];
+
+/** Render the Regulatory Compliance checklist. */
+function updateCompliance(s) {
+  const body = document.getElementById('complianceBody');
+  if (!body) return;
+  let html = '<div class="compliance-list">';
+  for (const c of COMPLIANCE_CHECKS) {
+    const ok = c.pass(s);
+    html += '<div class="comp-item' + (ok ? ' comp-pass' : ' comp-fail') + '">' +
+      '<span class="comp-icon">' + (ok ? '✓' : '✗') + '</span>' +
+      '<span class="comp-label">' + c.label + '</span>' +
+      '<span class="comp-desc">' + c.desc + '</span>' +
+      '<span class="comp-val">' + c.fmt(c.val(s)) + '</span>' +
+      '</div>';
+  }
+  html += '</div>';
+  body.innerHTML = html;
 }
 
 /** Render the scrollable event log, most recent first. Shows loan request default probabilities when pending. */

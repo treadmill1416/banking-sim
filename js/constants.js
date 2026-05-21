@@ -14,6 +14,7 @@ export const RATE_MAX = 10;
 export const LOAN_RATE_MIN = 0.5;
 export const LOAN_RATE_MAX = 20;
 export const LOAN_RATE_STEP = 0.25;
+export const REJECT_THRESHOLD = 20;
 export const DEPO_RATE_MIN = 0;
 export const DEPO_RATE_MAX = 10;
 export const DEPO_RATE_STEP = 0.25;
@@ -55,8 +56,13 @@ export const INITIAL = {
   depositInsurancePct: 0,
   bankRunActive: false,
   bankRunStartTick: 0,
-  autoAcceptThreshold: 0,
-  autoRejectThreshold: 25,
+  riskRateMap: [
+    { risk: 0, rate: 5.5 },
+    { risk: 10, rate: 7.0 },
+    { risk: 20, rate: 10.0 },
+    { risk: 35, rate: 20.0 },
+    { risk: 50, rate: 20.0 },
+  ],
   autoCbBorrowing: true,
   weightedLoanRate: 5.50,
   depositStabilityThreshold: 0,

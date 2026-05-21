@@ -324,6 +324,34 @@ export function computeDefaultRate(s) {
   return finished > 0 ? (defaulted / finished) * 100 : 0;
 }
 
+/** Look up the assigned rate for a given default risk % from the risk rate map.
+ *  Returns the rate as a number (approve at that rate) or null (reject).
+ *  Interpolates linearly between defined points.
+ *  @param {object} s
+ *  @param {number} risk - Default probability percentage (0-50)
+ *  @returns {number|null} */
+export function getRateForRisk(s, risk) {
+  const map = s.riskRateMap;
+  if (!map || map.length === 0) return s.loanRate;
+  const sorted = [...map].sort((a, b) => a.risk - b.risk);
+  const MAX_RATE = 20;
+  function valid(r) { return r !== null && r !== undefined && r <= MAX_RATE; }
+
+  if (risk <= sorted[0].risk) return valid(sorted[0].rate) ? sorted[0].rate : null;
+  if (risk >= sorted[sorted.length - 1].risk) return valid(sorted[sorted.length - 1].rate) ? sorted[sorted.length - 1].rate : null;
+
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const p1 = sorted[i], p2 = sorted[i + 1];
+    if (risk >= p1.risk && risk <= p2.risk) {
+      if (!valid(p1.rate) || !valid(p2.rate)) return null;
+      const t = p2.risk === p1.risk ? 0 : (risk - p1.risk) / (p2.risk - p1.risk);
+      const rate = p1.rate + (p2.rate - p1.rate) * t;
+      return rate > MAX_RATE ? null : rate;
+    }
+  }
+  return s.loanRate;
+}
+
 /** Recalculate weighted average loan rate from all active loans: Σ(amount_i × rate_i) / Σ(amount_i).
  *  @param {object} s */
 export function recomputeWeightedLoanRate(s) {
@@ -364,6 +392,23 @@ export function checkReserves(s) {
       addEvent(s, 'cb', 'Auto-borrowed ' + fmtDollar(deficit) + ' from CB (reserve shortfall)', 'event-expense');
     } else {
       addEvent(s, 'cb', 'Reserves below requirement! Borrow from CB desk.', 'event-warn');
+    }
+  }
+}
+
+/** Auto-process pending loan requests based on the risk rate graph.
+ *  Loans past their autoProcessAt tick get approved/rejected according to the graph.
+ *  @param {object} s */
+export function processAutoDecisions(s) {
+  for (const e of s.eventLog) {
+    if (e.type !== 'loan_request' || e.approved !== undefined) continue;
+    if (s.tick < e.autoProcessAt) continue;
+    if (e.suggestedRate !== null && e.suggestedRate !== undefined) {
+      processLoanApproval(s, e, e.suggestedRate);
+    } else {
+      e.approved = false;
+      e.msg += ' — AUTO-REJECTED';
+      e.cls = 'event-expense';
     }
   }
 }

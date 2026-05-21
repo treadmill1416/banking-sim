@@ -53,6 +53,11 @@ export function load() {
         });
       }
       if (!_state.ledgerJournal || _state.ledgerJournal.length === 0) initLedger(_state);
+      // Migration: old autoAcceptThreshold/autoRejectThreshold -> riskRateMap
+      if (_state.autoAcceptThreshold !== undefined && !_state.riskRateMap) {
+        delete _state.autoAcceptThreshold;
+        delete _state.autoRejectThreshold;
+      }
       return true;
     }
   } catch (e) {}

@@ -1,6 +1,6 @@
 import { REGIME_ECB_BIAS, REGIME_DEFAULT_RISK, REGIME_DEPOSIT_MOD, REGIME_TRANSITIONS, REGIME_NAMES, ECB_RATE_NAMES, CB_SPREAD, RATE_MIN, RATE_MAX, PROB, TICKS_PER_MONTH, APPLICATIONS_PER_OFFICER, REGIME_LOAN_DEMAND } from './constants.js';
 import { addEvent } from './state.js';
-import { processLoanApproval, totalAssets } from './mechanics.js';
+import { getRateForRisk, totalAssets } from './mechanics.js';
 import { postJournal, getBalance } from './ledger.js';
 import { fmtDollar } from './utils.js';
 
@@ -81,22 +81,17 @@ export function tryLoanRequest(s) {
   const amount = Math.min(raw, maxLoan);
   const riskMult = REGIME_DEFAULT_RISK[s.regime];
   const defaultProb = Math.min((1 + Math.random() * 35) * riskMult, 50);
+  const suggestedRate = getRateForRisk(s, defaultProb);
   const id = 'lr-' + s.nextEventId;
-  const entry = addEvent(s, 'loan_request', 'Loan request: ' + fmtDollar(amount), 'event-info', {
+  addEvent(s, 'loan_request', 'Loan request: ' + fmtDollar(amount), 'event-info', {
     loanAmount: amount,
     defaultProb,
     loanRequestId: id,
     proposedRate: s.loanRate,
+    suggestedRate,
+    autoProcessAt: s.tick + 15,
     durationMonths: 3 + Math.floor(Math.random() * 34)
   });
-  if (s.autoAcceptThreshold > 0 && entry.defaultProb <= s.autoAcceptThreshold) {
-    processLoanApproval(s, entry, s.loanRate);
-  }
-  if (s.autoRejectThreshold > 0 && entry.defaultProb >= s.autoRejectThreshold) {
-    entry.approved = false;
-    entry.rejectedAtTick = s.tick;
-    addEvent(s, 'loan', 'Auto-rejected (risk too high): ' + fmtDollar(amount), 'event-expense');
-  }
 }
 
 /** Randomly adjust one of the three ECB policy rates by ±25bp. Direction is biased by economic regime. Enforces corridor ordering: Depo ≤ MRO − 25bp ≤ MLF − 25bp.

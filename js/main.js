@@ -1,5 +1,5 @@
 import { getState, setState, createInitialState, load, save, reset as resetState } from './state.js';
-import { accrueInterest, processDefaults, checkReserves, expireOldLoans, reserveRatio, computeNim, equity, tryDepositStability, processLoanPayments, computeDefaultRate, processSalaries, activeLoanCapacity, countActiveLoans } from './mechanics.js';
+import { accrueInterest, processDefaults, checkReserves, expireOldLoans, processAutoDecisions, reserveRatio, computeNim, equity, tryDepositStability, processLoanPayments, computeDefaultRate, processSalaries, activeLoanCapacity, countActiveLoans } from './mechanics.js';
 import { tryDepositFlow, tryLoanRequest, tryEcbChange, tryRegimeChange } from './events.js';
 import { approveLoan, rejectLoan, cbBorrow, cbRepay } from './actions.js';
 import { fmtDollar } from './utils.js';
@@ -10,6 +10,7 @@ import { addEvent } from './state.js';
 import { initAdmin } from './admin.js';
 import { initTesting, updateDebugEquity } from './testing.js';
 import { postDailyInterest, updateLedgerPnl, initLedger } from './ledger.js';
+import { initRiskGraph, updateRiskGraph } from './riskGraph.js';
 
 /** @module main - Application entry point. Orchestrates the game loop, event delegation, initialization, tab switching, and collapsible cards. */
 
@@ -18,8 +19,8 @@ export let intervalId = null;
 
 /** Core game tick: advance time by 1 hour, run all mechanics and events, update UI, save.
  *  Order: accrue interest → process defaults → P&L snapshots → loan payments →
- *  deposit flows → deposit stability → loan requests → ECB changes → regime changes →
- *  expire old loans → check reserves. */
+ *  deposit flows → deposit stability → loan requests → auto decisions →
+ *  ECB changes → regime changes → expire old loans → check reserves. */
 function tick() {
   const s = getState();
   s.tick++;
@@ -32,6 +33,7 @@ function tick() {
   tryDepositFlow(s);
   tryDepositStability(s);
   tryLoanRequest(s);
+  processAutoDecisions(s);
   tryEcbChange(s);
   tryRegimeChange(s);
   expireOldLoans(s);
@@ -107,11 +109,9 @@ export function applyAdminConfig(overrides) {
   }] : [];
   s.nextLoanRecordId = 1;
   s.defaultRateHistory = [];
-  document.getElementById('loanRateSlider').value = s.loanRate;
   document.getElementById('depositRateSlider').value = s.depositRate;
-  document.getElementById('autoRejectSlider').value = s.autoRejectThreshold;
-  document.getElementById('autoAcceptSlider').value = s.autoAcceptThreshold;
   document.getElementById('autoCbCheckbox').checked = s.autoCbBorrowing;
+  initRiskGraph();
   document.getElementById('pauseBtn').textContent = '▶';
   updateAll();
   updateLoop();
@@ -159,9 +159,8 @@ export function resetGame() {
   s.historyRR.push(reserveRatio(s));
   s.historyNIM.push(computeNim(s));
   s.historyEQ.push(equity(s));
-  document.getElementById('autoAcceptSlider').value = s.autoAcceptThreshold;
-  document.getElementById('autoRejectSlider').value = s.autoRejectThreshold;
   document.getElementById('autoCbCheckbox').checked = s.autoCbBorrowing;
+  initRiskGraph();
   document.getElementById('pauseBtn').textContent = s.paused ? '▶' : '⏸';
   updateAll();
   updateLoop();
@@ -220,6 +219,7 @@ export function updateAll() {
   updateLoanApps();
   updateAcceptedLoans();
   updateDebugEquity();
+  updateRiskGraph();
   save();
 }
 
@@ -250,27 +250,9 @@ function bindEvents() {
   document.getElementById('cbBorrowBtn').addEventListener('click', onCdBorrowClick);
   document.getElementById('cbRepayBtn').addEventListener('click', onCdRepayClick);
 
-  document.getElementById('loanRateSlider').addEventListener('input', function () {
-    getState().loanRate = parseFloat(this.value);
-    updateUI();
-    save();
-  });
-
   document.getElementById('depositRateSlider').addEventListener('input', function () {
     getState().depositRate = parseFloat(this.value);
     updateUI();
-    save();
-  });
-
-  document.getElementById('autoAcceptSlider').addEventListener('input', function () {
-    getState().autoAcceptThreshold = parseFloat(this.value);
-    document.getElementById('autoAcceptDisplay').textContent = getState().autoAcceptThreshold.toFixed(1) + '%';
-    save();
-  });
-
-  document.getElementById('autoRejectSlider').addEventListener('input', function () {
-    getState().autoRejectThreshold = parseFloat(this.value);
-    document.getElementById('autoRejectDisplay').textContent = getState().autoRejectThreshold.toFixed(1) + '%';
     save();
   });
 
@@ -341,12 +323,11 @@ function init() {
   }
   document.querySelector('.speed-btn[data-speed="' + s.speed + '"]')?.classList.add('active');
   if (s.paused) document.getElementById('pauseBtn').textContent = '▶';
-  document.getElementById('autoAcceptSlider').value = s.autoAcceptThreshold;
-  document.getElementById('autoRejectSlider').value = s.autoRejectThreshold;
   document.getElementById('insuranceSlider').value = s.depositInsurancePct;
   document.getElementById('insuranceDisplay').textContent = s.depositInsurancePct + '%';
   document.getElementById('autoCbCheckbox').checked = s.autoCbBorrowing;
   initCollapsible();
+  initRiskGraph();
   bindEvents();
   initAdmin();
   initTesting();

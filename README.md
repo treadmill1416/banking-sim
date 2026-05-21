@@ -5,10 +5,15 @@ A browser-based banking simulation where you run a commercial bank. Set interest
 ## Play
 
 ```
+npm start
+```
+
+Or with Python:
+```
 python3 -m http.server
 ```
 
-Open `http://localhost:8000` in a browser. Game starts paused — hit **▶** to begin.
+Open `http://localhost:3000` (Node) or `http://localhost:8000` (Python) in a browser. Game starts paused — hit **▶** to begin.
 
 ## Concept
 

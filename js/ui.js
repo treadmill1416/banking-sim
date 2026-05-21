@@ -11,7 +11,6 @@ export function updateUI() {
   const s = getState();
   document.getElementById('gameDate').textContent = gameDateStr(s.tick);
   document.getElementById('quarter').textContent = quarterStr(s.tick);
-  document.getElementById('autoAcceptDisplay').textContent = s.autoAcceptThreshold.toFixed(1) + '%';
   const badge = document.getElementById('regimeBadge');
   badge.textContent = s.regime.toUpperCase();
   badge.className = 'regime-badge regime-' + s.regime;
@@ -46,10 +45,7 @@ export function updateUI() {
   document.getElementById('metricNpl').textContent = fmtPct(npl);
   document.getElementById('metricNpl').style.color = npl < 2 ? '#2d8a4e' : npl < 5 ? '#d97706' : '#cc0000';
 
-  document.getElementById('loanRateDisplay').textContent = s.loanRate.toFixed(2) + '%';
   document.getElementById('depositRateDisplay').textContent = s.depositRate.toFixed(2) + '%';
-  const rejEl = document.getElementById('autoRejectDisplay');
-  if (rejEl) rejEl.textContent = s.autoRejectThreshold.toFixed(1) + '%';
   const insEl = document.getElementById('insuranceDisplay');
   if (insEl) insEl.textContent = s.depositInsurancePct + '%';
 
@@ -304,14 +300,18 @@ export function updateLoanApps() {
   }
   for (const e of pending) {
     const savedRate = sliderVals[e.loanRequestId];
-    const rate = savedRate !== undefined ? parseFloat(savedRate) : s.loanRate;
+    const suggested = e.suggestedRate !== null && e.suggestedRate !== undefined ? e.suggestedRate : null;
+    const defaultRate = suggested !== null ? suggested : s.loanRate;
+    const rate = savedRate !== undefined ? parseFloat(savedRate) : defaultRate;
+    const rejectSuggested = suggested === null;
     const interest = e.loanAmount * rate / 100;
     const months = e.durationMonths || 12;
     const maturityTick = s.tick + months * TICKS_PER_MONTH;
-    html += '<div class="la-entry" data-amount="' + e.loanAmount + '">';
+    html += '<div class="la-entry' + (rejectSuggested ? ' la-suggest-reject' : '') + '" data-amount="' + e.loanAmount + '">';
     html += '<div class="la-top">';
     html += '<span class="la-id">' + e.loanRequestId + '</span>';
     html += '<span class="la-amount">' + fmtDollar(e.loanAmount) + '</span>';
+    if (rejectSuggested) html += '<span class="la-suggest-badge">REJECT</span>';
     html += '</div>';
     html += '<div class="la-rate-row">';
     html += '<span class="la-rate-label">Rate:</span>';

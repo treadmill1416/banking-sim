@@ -127,6 +127,17 @@ function updateCompliance(s) {
       '</div>';
   }
   html += '</div>';
+  if (s.penaltyPoints > 0) {
+    const pct = s.penaltyPoints;
+    const color = pct >= 80 ? '#e74c3c' : pct >= 40 ? '#e67e22' : '#f39c12';
+    html += '<div class="comp-penalty">' +
+      '<div class="comp-penalty-header">' +
+        '<span>⚠ Penalty Points</span>' +
+        '<span style="color:' + color + '">' + pct.toFixed(1) + ' / 100</span>' +
+      '</div>' +
+      '<div class="comp-penalty-bar"><div class="comp-penalty-fill" style="width:' + pct + '%;background:' + color + '"></div></div>' +
+    '</div>';
+  }
   body.innerHTML = html;
 }
 

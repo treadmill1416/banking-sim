@@ -3,7 +3,7 @@ import {
   requiredReserves, reserveRatio, totalAssets, computeNim,
   trailingNpl, accrueInterest, activeLoanCapacity, countActiveLoans,
   recomputeWeightedLoanRate, computeDefaultRate, getRateForRisk,
-  processAutoDecisions,
+  processAutoDecisions, updatePenalty,
 } from './mechanics.js';
 import { initLedger, postJournal, getBalance } from './ledger.js';
 import { createInitialState } from './state.js';
@@ -267,5 +267,115 @@ describe('processAutoDecisions', () => {
     processAutoDecisions(s);
     const entry = s.eventLog.find(e => e.loanRequestId === 'lr-4');
     expect(entry.approved).toBe(false);
+  });
+});
+
+describe('updatePenalty', () => {
+  beforeEach(() => {
+    s.tick = 60;
+    postJournal(s, [
+      { account: 'cash', debit: 400000 },
+      { account: 'deposits', credit: 600000 },
+      { account: 'loansReceivable', debit: 500000 },
+      { account: 'equity', credit: 300000 },
+    ], 'setup');
+    s.penaltyPoints = 0;
+  });
+
+  it('adds no penalty when all checks pass', () => {
+    updatePenalty(s);
+    expect(s.penaltyPoints).toBe(0);
+  });
+
+  it('adds no penalty on non-month ticks', () => {
+    postJournal(s, [{ account: 'equity', debit: 999999 }], 'wipe');
+    s.tick = 1;
+    updatePenalty(s);
+    expect(s.penaltyPoints).toBe(0);
+  });
+
+  it('charges solvency penalty when equity is negative', () => {
+    postJournal(s, [
+      { account: 'cash', credit: 900000 },
+      { account: 'retainedEarnings', debit: 900000 },
+    ], 'wreck');
+    updatePenalty(s);
+    expect(s.penaltyPoints).toBeGreaterThan(0);
+  });
+
+  it('charges capital adequacy penalty when equity/loans < 8%', () => {
+    postJournal(s, [
+      { account: 'cash', credit: 370000 },
+      { account: 'retainedEarnings', debit: 370000 },
+    ], 'low capital');
+    s.tick = 120;
+    updatePenalty(s);
+    expect(s.penaltyPoints).toBeGreaterThan(0);
+  });
+
+  it('charges reserve requirement penalty when RR < 1%', () => {
+    postJournal(s, [
+      { account: 'cash', credit: 490000 },
+      { account: 'retainedEarnings', debit: 490000 },
+    ], 'low reserves');
+    updatePenalty(s);
+    expect(s.penaltyPoints).toBeGreaterThan(0);
+  });
+
+  it('charges NPL penalty when trailing NPL > 5%', () => {
+    s.defaultTicks = [60, 60];
+    s.defaultAmounts = [40000, 40000];
+    updatePenalty(s);
+    expect(s.penaltyPoints).toBeGreaterThan(0);
+  });
+
+  it('charges loan capacity penalty when active > capacity', () => {
+    s.loanRecords = [
+      { status: 'active' }, { status: 'active' }, { status: 'active' },
+      { status: 'active' }, { status: 'active' }, { status: 'active' },
+      { status: 'active' }, { status: 'active' }, { status: 'active' },
+      { status: 'active' }, { status: 'active' }, { status: 'active' },
+    ];
+    updatePenalty(s);
+    expect(s.penaltyPoints).toBeGreaterThan(0);
+  });
+
+  it('decays by 5 points when fully compliant', () => {
+    s.penaltyPoints = 30;
+    updatePenalty(s);
+    expect(s.penaltyPoints).toBe(25);
+  });
+
+  it('does not decay below 0', () => {
+    s.penaltyPoints = 3;
+    updatePenalty(s);
+    expect(s.penaltyPoints).toBe(0);
+  });
+
+  it('compounds across multiple months', () => {
+    postJournal(s, [
+      { account: 'cash', credit: 900000 },
+      { account: 'retainedEarnings', debit: 900000 },
+    ], 'wreck');
+    s.tick = 60;
+    updatePenalty(s);
+    const afterFirst = s.penaltyPoints;
+
+    s.tick = 120;
+    updatePenalty(s);
+    expect(s.penaltyPoints).toBeGreaterThan(afterFirst);
+  });
+
+  it('caps at 100', () => {
+    s.penaltyPoints = 99;
+
+    postJournal(s, [
+      { account: 'cash', credit: 900000 },
+      { account: 'retainedEarnings', debit: 900000 },
+    ], 'wreck');
+
+    s.tick = 60;
+    updatePenalty(s);
+    expect(s.penaltyPoints).toBe(100);
   });
 });

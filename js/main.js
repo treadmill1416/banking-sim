@@ -1,8 +1,8 @@
 import { getState, setState, createInitialState, load, save, reset as resetState } from './state.js';
-import { accrueInterest, processDefaults, checkReserves, expireOldLoans, processAutoDecisions, reserveRatio, computeNim, equity, tryDepositStability, processLoanPayments, computeDefaultRate, processSalaries, activeLoanCapacity, countActiveLoans } from './mechanics.js';
+import { accrueInterest, processDefaults, checkReserves, expireOldLoans, processAutoDecisions, reserveRatio, computeNim, equity, tryDepositStability, processLoanPayments, computeDefaultRate, processSalaries, activeLoanCapacity, countActiveLoans, updatePenalty } from './mechanics.js';
 import { tryDepositFlow, tryLoanRequest, tryEcbChange, tryRegimeChange } from './events.js';
 import { approveLoan, rejectLoan, cbBorrow, cbRepay } from './actions.js';
-import { fmtDollar } from './utils.js';
+import { fmtDollar, gameDateStr } from './utils.js';
 import { updateUI, updateEventLog, updateLoanApps, updatePnlDisplay, updateAcceptedLoans, updateLedgerDisplay, updateAccountingTab, updateHrTab } from './ui.js';
 import { updateCharts } from './charts.js';
 import { HISTORY_MAX, LOANS_PER_OFFICER } from './constants.js';
@@ -38,6 +38,9 @@ function tick() {
   tryRegimeChange(s);
   expireOldLoans(s);
   checkReserves(s);
+  updatePenalty(s);
+
+  if (s.penaltyPoints >= 100) { triggerGameOver(s); return; }
 
   if (s.tick % 2 === 0) postDailyInterest(s);
 
@@ -132,6 +135,21 @@ function togglePause() {
   s.paused = !s.paused;
   document.getElementById('pauseBtn').textContent = s.paused ? '▶' : '⏸';
   updateLoop();
+}
+
+/** Pause the game and show the Game Over overlay with penalty reason. */
+function triggerGameOver(s) {
+  if (intervalId) { clearInterval(intervalId); intervalId = null; }
+  s.paused = true;
+  const body = document.getElementById('gameoverBody');
+  body.innerHTML =
+    '<div class="gameover-reason">⚠ REGULATORS SEIZED THE BANK</div>' +
+    '<div class="gameover-sub">Penalty Points: ' + s.penaltyPoints + ' / 100</div>' +
+    '<div class="gameover-summary">' +
+      '<div class="go-row"><span class="go-label">Game Duration</span><span class="go-val">' + gameDateStr(s.tick) + '</span></div>' +
+      '<div class="go-row"><span class="go-label">Total Ticks</span><span class="go-val">' + s.tick.toLocaleString() + '</span></div>' +
+    '</div>';
+  document.getElementById('gameoverOverlay').style.display = 'flex';
 }
 
 /** Reset game to initial state after user confirmation. Reinitializes ledger, loan records, and history. */

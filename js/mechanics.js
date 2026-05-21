@@ -424,3 +424,38 @@ export function expireOldLoans(s) {
     }
   }
 }
+
+/** Severity weights per regulation. */
+const PENALTY_SEVERITY = { solvency: 10, capitalAdequacy: 7, reserveRequirement: 6, liquidity: 5, nplRatio: 4, loanCapacity: 2 };
+const PENALTY_DECAY_PER_MONTH = 5;
+
+/** Compute penalty factor (0–1) for each regulation based on violation severity.
+ *  Called on month boundaries. Adds to running total, decays when fully compliant.
+ *  @param {object} s */
+export function updatePenalty(s) {
+  if (s.tick % TICKS_PER_MONTH !== 0) return;
+
+  const RR = reserveRatio(s);
+  const EQ = equity(s);
+  const TA = totalAssets(s);
+  const loans = getBalance(s, 'loansReceivable');
+  const capAdj = loans > 0 ? EQ / loans : 1;
+  const NPL = trailingNpl(s);
+  const active = countActiveLoans(s);
+  const capacity = activeLoanCapacity(s);
+
+  let monthly = 0;
+
+  if (EQ < 0) monthly += PENALTY_SEVERITY.solvency * Math.min(1, Math.abs(EQ) / Math.max(TA, 1));
+  if (capAdj < 0.08) monthly += PENALTY_SEVERITY.capitalAdequacy * Math.min(1, (0.08 - capAdj) / 0.08);
+  if (RR < 1) monthly += PENALTY_SEVERITY.reserveRequirement * Math.min(1, (1 - RR) / 1);
+  if (RR < 5) monthly += PENALTY_SEVERITY.liquidity * Math.min(1, (5 - RR) / 5);
+  if (NPL > 5) monthly += PENALTY_SEVERITY.nplRatio * Math.min(1, (NPL - 5) / 10);
+  if (active > capacity) monthly += PENALTY_SEVERITY.loanCapacity * Math.min(1, (active - capacity) / Math.max(capacity, 1));
+
+  s.penaltyPoints = Math.max(0, (s.penaltyPoints || 0) + monthly);
+
+  if (monthly === 0) s.penaltyPoints = Math.max(0, s.penaltyPoints - PENALTY_DECAY_PER_MONTH);
+
+  s.penaltyPoints = Math.min(100, s.penaltyPoints);
+}

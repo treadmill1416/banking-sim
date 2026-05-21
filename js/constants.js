@@ -70,6 +70,7 @@ export const INITIAL = {
   loanDemandPeakPct: 3,
   numWorkers: 1,
   ledgerJournal: [], ledgerBalances: {}, ledgerNextId: 1,   _dailyInt: { depoInt: 0, resInt: 0, cbInt: 0 }, ledgerMonthStart: null, ledgerLastMonth: null,
+  penaltyPoints: 0,
   loanRecords: [],
   nextLoanRecordId: 1,
   defaultRateHistory: [],

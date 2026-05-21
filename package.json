@@ -1,0 +1,16 @@
+{
+  "name": "bank-runner",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "serve .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "devDependencies": {
+    "serve": "^14.2.6",
+    "vitest": "^4.1.7"
+  }
+}

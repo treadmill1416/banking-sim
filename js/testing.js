@@ -9,6 +9,10 @@ import { gameDateStr } from './utils.js';
 export function initTesting() {
   const s = getState();
   const bar = document.getElementById('debugBar');
+  document.getElementById('gameoverRestart')?.addEventListener('click', () => {
+    document.getElementById('gameoverOverlay').style.display = 'none';
+    resetGame();
+  });
   if (!s.debug) {
     if (bar) bar.style.display = 'none';
     return;
@@ -18,10 +22,6 @@ export function initTesting() {
   document.getElementById('defaultAllLoansBtn')?.addEventListener('click', defaultAllLoans);
   document.getElementById('startBankRunBtn')?.addEventListener('click', startBankRun);
   document.getElementById('finishGameBtn')?.addEventListener('click', finishGame);
-  document.getElementById('gameoverRestart')?.addEventListener('click', () => {
-    document.getElementById('gameoverOverlay').style.display = 'none';
-    resetGame();
-  });
 }
 
 export function updateDebugEquity() {

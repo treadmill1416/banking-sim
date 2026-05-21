@@ -338,6 +338,33 @@ Date: new Date(2026, 0, 1) + tick × 3600000 ms
 
 No build step. ES modules — run via local server.
 
+## Tests
+
+Unit tests use [Vitest](https://vitest.dev) (v4). Tests cover core logic modules:
+
+| Test file | Module under test |
+|---|---|
+| `js/constants.test.js` | Constant values, initial state, regime tables |
+| `js/utils.test.js` | Formatting helpers (`fmtDollar`, `fmtPct`, dates) |
+| `js/state.test.js` | State creation, event log, serialization |
+| `js/ledger.test.js` | Double-entry accounting, journal posting, P&L |
+| `js/mechanics.test.js` | Reserve ratio, NIM, loan capacity, interest accrual |
+
+**Run tests:**
+
+```bash
+npm test              # single run
+npm run test:watch    # watch mode
+npm run test:coverage # with coverage report
+```
+
+Requires Node.js 18+. If not installed, use `nvm`:
+```bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.4/install.sh | bash
+export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+nvm install 22
+```
+
 ## Admin Panel
 
 A hidden admin interface is available when `state.debug === true`. Toggle the **⚙** button to open a modal that lets you override:

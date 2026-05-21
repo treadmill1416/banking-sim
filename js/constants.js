@@ -51,7 +51,7 @@ export const INITIAL = {
   cumulativeDefaults: 0,
   defaultTicks: [],
   defaultAmounts: [],
-  debug: true,
+  debug: false,
   depositInsurancePct: 0,
   bankRunActive: false,
   bankRunStartTick: 0,

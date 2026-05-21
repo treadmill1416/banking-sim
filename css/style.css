@@ -332,3 +332,12 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 /* Loan entry suggest-reject badge */
 .la-suggest-reject{border-left:3px solid #cc0000!important}
 .la-suggest-badge{display:inline-block;background:#cc0000;color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;margin-left:6px}
+
+/* Loan portfolio scatter chart */
+.loan-scatter-section{margin-top:10px;border-top:1px solid #eee;padding-top:8px}
+.loan-scatter-legend{display:flex;gap:14px;font-size:11px;color:#767676;margin-bottom:4px;justify-content:center}
+.ls-legend-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:3px;vertical-align:middle}
+.ls-dot-active{background:#2563eb}
+.ls-dot-repaid{background:#9b9b9b}
+.ls-dot-defaulted{background:#cc0000}
+.loan-scatter-svg{width:100%;height:140px;display:block}

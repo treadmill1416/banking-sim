@@ -70,10 +70,13 @@ export function initRiskGraph() {
   if (!svg) return;
   cacheDims();
   render();
-  svg.addEventListener('mousedown', onMouseDown);
+  svg.addEventListener('mousedown', onPointerDown);
+  svg.addEventListener('touchstart', onTouchStart, { passive: false });
   svg.addEventListener('contextmenu', e => e.preventDefault());
-  document.addEventListener('mousemove', onMouseMove);
-  document.addEventListener('mouseup', onMouseUp);
+  document.addEventListener('mousemove', onPointerMove);
+  document.addEventListener('touchmove', onTouchMove, { passive: false });
+  document.addEventListener('mouseup', onPointerUp);
+  document.addEventListener('touchend', onTouchEnd);
   resizeObserver = new ResizeObserver(() => { cacheDims(); render(); });
   resizeObserver.observe(svg.parentElement);
 }
@@ -161,12 +164,19 @@ function render() {
   svg.innerHTML = html;
 }
 
-function onMouseDown(e) {
+function getPointerCoords(e) {
   const rect = svg.getBoundingClientRect();
-  const mx = e.clientX - rect.left;
-  const my = e.clientY - rect.top;
-  const el = e.target.closest('circle');
+  return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+}
 
+function getTouchCoords(e) {
+  const t = e.touches[0];
+  const rect = svg.getBoundingClientRect();
+  return { x: t.clientX - rect.left, y: t.clientY - rect.top };
+}
+
+function processPointerDown(mx, my, e) {
+  const el = e.target.closest('circle');
   if (el) {
     // Right-click on point = delete (non-endpoints only)
     if (e.button === 2) {
@@ -177,34 +187,32 @@ function onMouseDown(e) {
         setMap(newMap);
         render();
       }
-      return;
+      return true;
     }
     // Left-click = start drag
     if (e.button === 0) {
       dragIdx = parseInt(el.dataset.idx);
       draggedOut = false;
     }
-    return;
+    return true;
   }
 
   // Left-click on empty space = add point
-  if (e.button !== 0) return;
+  if (e.button !== 0) return true;
   const map = getMap();
-  if (map.length >= 20) return;
+  if (map.length >= 20) return true;
   const risk = clamp(snap(pxToX(mx), X_STEP), X_MIN, X_MAX);
   const rawRate = snap(pxToY(my), X_STEP);
   const rate = rawRate <= REJECT_THRESHOLD ? clamp(rawRate, Y_MIN, REJECT_THRESHOLD) : null;
-  if (map.some(p => Math.abs(p.risk - risk) < 0.01)) return;
+  if (map.some(p => Math.abs(p.risk - risk) < 0.01)) return true;
   const newMap = [...map, { risk, rate }].sort((a, b) => a.risk - b.risk);
   setMap(newMap);
   render();
+  return true;
 }
 
-function onMouseMove(e) {
+function processPointerMove(mx, my) {
   if (dragIdx < 0) return;
-  const rect = svg.getBoundingClientRect();
-  const mx = e.clientX - rect.left;
-  const my = e.clientY - rect.top;
   const map = getMap();
   if (!map[dragIdx]) return;
 
@@ -229,10 +237,9 @@ function onMouseMove(e) {
   render();
 }
 
-function onMouseUp() {
+function processPointerUp() {
   if (dragIdx < 0) return;
   const map = getMap();
-  // Delete point if dragged outside plot (non-endpoints only)
   if (draggedOut && dragIdx > 0 && dragIdx < map.length - 1) {
     const newMap = map.filter((_, i) => i !== dragIdx);
     setMap(newMap);
@@ -240,4 +247,53 @@ function onMouseUp() {
   dragIdx = -1;
   draggedOut = false;
   updateAll();
+}
+
+function onPointerDown(e) {
+  const { x, y } = getPointerCoords(e);
+  processPointerDown(x, y, e);
+}
+
+function onPointerMove(e) {
+  if (dragIdx < 0) return;
+  const { x, y } = getPointerCoords(e);
+  processPointerMove(x, y);
+}
+
+function onPointerUp(e) {
+  processPointerUp();
+}
+
+function onTouchStart(e) {
+  e.preventDefault();
+  const { x, y } = getTouchCoords(e);
+  const el = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY);
+  if (el && el.closest) {
+    const circle = el.closest('circle');
+    if (circle) {
+      dragIdx = parseInt(circle.dataset.idx);
+      draggedOut = false;
+      return;
+    }
+  }
+  const map = getMap();
+  if (map.length >= 20) return;
+  const risk = clamp(snap(pxToX(x), X_STEP), X_MIN, X_MAX);
+  const rawRate = snap(pxToY(y), X_STEP);
+  const rate = rawRate <= REJECT_THRESHOLD ? clamp(rawRate, Y_MIN, REJECT_THRESHOLD) : null;
+  if (map.some(p => Math.abs(p.risk - risk) < 0.01)) return;
+  const newMap = [...map, { risk, rate }].sort((a, b) => a.risk - b.risk);
+  setMap(newMap);
+  render();
+}
+
+function onTouchMove(e) {
+  e.preventDefault();
+  if (dragIdx < 0) return;
+  const { x, y } = getTouchCoords(e);
+  processPointerMove(x, y);
+}
+
+function onTouchEnd(e) {
+  processPointerUp();
 }

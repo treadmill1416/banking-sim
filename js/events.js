@@ -1,4 +1,4 @@
-import { REGIME_ECB_BIAS, REGIME_DEFAULT_RISK, REGIME_DEPOSIT_MOD, REGIME_TRANSITIONS, REGIME_NAMES, ECB_RATE_NAMES, CB_SPREAD, RATE_MIN, RATE_MAX, PROB, TICKS_PER_MONTH, APPLICATIONS_PER_OFFICER, REGIME_LOAN_DEMAND, RESEARCH_BASE_RELATIVE_ERROR, NEGATIVE_EQUITY_DEPO_MULTIPLIER } from './constants.js';
+import { REGIME_ECB_BIAS, REGIME_DEFAULT_RISK, REGIME_DEPOSIT_MOD, REGIME_TRANSITIONS, REGIME_NAMES, ECB_RATE_NAMES, CB_SPREAD, RATE_MIN, RATE_MAX, PROB, TICKS_PER_MONTH, APPLICATIONS_PER_OFFICER, REGIME_LOAN_DEMAND, RESEARCH_BASE_RELATIVE_ERROR, NEGATIVE_EQUITY_DEPO_MULTIPLIER, MARKETING_BOOST_PER_LEVEL, BRANCH_DEMAND_BONUS } from './constants.js';
 import { addEvent } from './state.js';
 import { getRateForRisk, totalAssets, equity } from './mechanics.js';
 import { postJournal, getBalance } from './ledger.js';
@@ -40,8 +40,9 @@ export function tryDepositFlow(s) {
   const rateDiff = s.depositRate - marketRate;
   const flowModifier = rateDiff * 200000;
   const insuranceBoost = 1 + (s.depositInsurancePct / 100) * 0.3;
+  const mktBoost = 1 + (s.marketingLevel || 0) * MARKETING_BOOST_PER_LEVEL;
   const regimeMod = REGIME_DEPOSIT_MOD[s.regime];
-  const amount = (base + flowModifier) * regimeMod * insuranceBoost;
+  const amount = (base + flowModifier) * regimeMod * insuranceBoost * mktBoost;
   if (amount > 0) {
     // Negative equity reduces inflows (depositor caution)
     const equityMod = equity(s) < 0 ? 0.3 : 1.0;
@@ -74,7 +75,10 @@ export function tryDepositFlow(s) {
  *  Auto-approves if default probability is below the auto-accept threshold.
  *  @param {object} s */
 export function tryLoanRequest(s) {
-  const appsPerMonth = s.numWorkers * APPLICATIONS_PER_OFFICER * REGIME_LOAN_DEMAND[s.regime];
+  let appsPerMonth = s.numWorkers * APPLICATIONS_PER_OFFICER * REGIME_LOAN_DEMAND[s.regime];
+  const mktBoost = 1 + (s.marketingLevel || 0) * MARKETING_BOOST_PER_LEVEL;
+  const branchBoost = 1 + (s.branchLevel || 0) * BRANCH_DEMAND_BONUS;
+  appsPerMonth *= mktBoost * branchBoost;
   const baseProb = appsPerMonth / TICKS_PER_MONTH;
   if (Math.random() >= baseProb) return;
   const ta = totalAssets(s);

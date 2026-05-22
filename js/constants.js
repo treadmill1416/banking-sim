@@ -50,6 +50,17 @@ export const RESEARCH_AUTO_GRAPH_COST = 10;
 export const MAX_RISK_ESTIMATE_LEVEL = 5;
 export const RESEARCH_ESTIMATE_COSTS = [3, 6, 12, 24, 48];
 
+// Marketing / customer acquisition
+export const MARKETING_MAX_LEVEL = 5;
+export const MARKETING_COST_PER_LEVEL = 5000;
+export const MARKETING_BOOST_PER_LEVEL = 0.2;
+
+// Branch expansion (uses RP after max risk estimation)
+export const MAX_BRANCH_LEVEL = 5;
+export const BRANCH_COSTS = [10, 20, 40, 80, 160];
+export const BRANCH_CAPACITY_BONUS = 5;
+export const BRANCH_DEMAND_BONUS = 0.15;
+
 export const INITIAL = {
   tick: 0,
   speed: 10,
@@ -95,6 +106,8 @@ export const INITIAL = {
   researchPoints: 0,
   riskEstimateLevel: 0,
   autoLoanGraphUnlocked: false,
+  marketingLevel: 0,
+  branchLevel: 0,
   ledgerJournal: [], ledgerBalances: {}, ledgerNextId: 1,   _dailyInt: { depoInt: 0, resInt: 0, cbInt: 0 }, ledgerMonthStart: null, ledgerLastMonth: null,
   penaltyPoints: 0,
   loanRecords: [],

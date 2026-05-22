@@ -1,4 +1,4 @@
-import { TICKS_PER_YEAR, TICKS_PER_MONTH, RESERVE_RATIO_TARGET, NPL_WINDOW, DEFAULT_WINDOW, REGIME_MULTIPLIERS, DEFAULT_ANNUAL_RATE, PROB, LOAN_EXPIRY_TICKS, LOAN_DEFAULT_DURATION, DEPO_STABILITY_PROB, DEPO_STABILITY_RATE, LOANS_PER_OFFICER, SALARY_PER_OFFICER, INSURANCE_ANNUAL_PREMIUM, RISK_WEIGHTS, TICKS_NEGATIVE_EQUITY_LIMIT, NEGATIVE_EQUITY_CB_SPREAD_PREMIUM, NEGATIVE_EQUITY_DEPO_MULTIPLIER, RESEARCH_POINTS_PER_ANALYST, ANALYST_SALARY } from './constants.js';
+import { TICKS_PER_YEAR, TICKS_PER_MONTH, RESERVE_RATIO_TARGET, NPL_WINDOW, DEFAULT_WINDOW, REGIME_MULTIPLIERS, DEFAULT_ANNUAL_RATE, PROB, LOAN_EXPIRY_TICKS, LOAN_DEFAULT_DURATION, DEPO_STABILITY_PROB, DEPO_STABILITY_RATE, LOANS_PER_OFFICER, SALARY_PER_OFFICER, INSURANCE_ANNUAL_PREMIUM, RISK_WEIGHTS, TICKS_NEGATIVE_EQUITY_LIMIT, NEGATIVE_EQUITY_CB_SPREAD_PREMIUM, NEGATIVE_EQUITY_DEPO_MULTIPLIER, RESEARCH_POINTS_PER_ANALYST, ANALYST_SALARY, MARKETING_COST_PER_LEVEL, MARKETING_MAX_LEVEL, MARKETING_BOOST_PER_LEVEL, BRANCH_CAPACITY_BONUS } from './constants.js';
 import { addEvent } from './state.js';
 import { fmtDollar } from './utils.js';
 import { postJournal, getBalance, getEquity, getNetIncome } from './ledger.js';
@@ -136,7 +136,7 @@ export function customerRefuses(s, rate, entry) {
  *  @param {object} s
  *  @returns {number} */
 export function activeLoanCapacity(s) {
-  return s.numWorkers * LOANS_PER_OFFICER;
+  return s.numWorkers * LOANS_PER_OFFICER + (s.branchLevel || 0) * BRANCH_CAPACITY_BONUS;
 }
 
 /** Number of active loans currently on the books.
@@ -164,6 +164,16 @@ export function processSalaries(s) {
     ], 'Monthly salaries - ' + s.numWorkers + ' loan officers, ' + (s.creditAnalysts || 0) + ' analysts');
     addEvent(s, 'hr', 'Paid salaries: ' + fmtDollar(totalSalary) + ' (' + s.numWorkers + ' officer(s), ' + (s.creditAnalysts || 0) + ' analyst(s))', 'event-expense');
   }
+  const mktLevel = s.marketingLevel || 0;
+  if (mktLevel > 0) {
+    const mktCost = mktLevel * MARKETING_COST_PER_LEVEL;
+    postJournal(s, [
+      { account: 'salaryExpense', debit: mktCost },
+      { account: 'cash', credit: mktCost },
+    ], 'Monthly marketing spend — level ' + mktLevel);
+    addEvent(s, 'hr', 'Marketing spend: ' + fmtDollar(mktCost) + ' (level ' + mktLevel + ')', 'event-expense');
+  }
+
   if (s.depositInsurancePct > 0) {
     const deposits = getBalance(s, 'deposits');
     const premium = deposits * (s.depositInsurancePct / 100) * INSURANCE_ANNUAL_PREMIUM / 12;

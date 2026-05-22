@@ -1,7 +1,7 @@
 import { getState } from './state.js';
 import { reserveRatio, equity, totalAssets, computeNim, computeRwa, trailingNpl, computeDefaultRate, activeLoanCapacity, countActiveLoans } from './mechanics.js';
 import { fmtDollar, fmtPct, escapeHtml, gameDateStr, quarterStr, fmtTicks } from './utils.js';
-import { TICKS_PER_MONTH, TICKS_PER_YEAR, HISTORY_MAX, LOAN_DEFAULT_DURATION, LOANS_PER_OFFICER, SALARY_PER_OFFICER, ANALYST_SALARY, RESEARCH_AUTO_GRAPH_COST, RESEARCH_ESTIMATE_COSTS, MAX_RISK_ESTIMATE_LEVEL, RESEARCH_BASE_RELATIVE_ERROR, RESEARCH_POINTS_PER_ANALYST } from './constants.js';
+import { TICKS_PER_MONTH, TICKS_PER_YEAR, HISTORY_MAX, LOAN_DEFAULT_DURATION, LOANS_PER_OFFICER, SALARY_PER_OFFICER, ANALYST_SALARY, RESEARCH_AUTO_GRAPH_COST, RESEARCH_ESTIMATE_COSTS, MAX_RISK_ESTIMATE_LEVEL, RESEARCH_BASE_RELATIVE_ERROR, RESEARCH_POINTS_PER_ANALYST, MAX_BRANCH_LEVEL, BRANCH_COSTS, BRANCH_CAPACITY_BONUS } from './constants.js';
 import { getBalance, getNetIncome, getCurrentMonthPnl, ACCOUNT_TYPES } from './ledger.js';
 
 /** @module ui - All DOM rendering. Updates the dashboard (balance sheet, metrics, P&L, loan panels, event log) and accounting tab. */
@@ -84,6 +84,24 @@ export function updateUI() {
     cntContainer.textContent = active + ' active / ' + repaid + ' repaid / ' + defaulted + ' defaulted';
   }
   updateCompliance(s);
+
+  // Tab notification badge — pending loans
+  const loansBadge = document.getElementById('loansBadge');
+  if (loansBadge) {
+    let _pending = 0;
+    for (const _e of s.eventLog) {
+      if (_e.type === 'loan_request' && _e.approved === undefined) _pending++;
+    }
+    loansBadge.textContent = _pending > 0 ? _pending : '';
+    loansBadge.classList.toggle('show', _pending > 0);
+  }
+
+  // Marketing level display
+  const mktDisp = document.getElementById('marketingLevelDisplay');
+  if (mktDisp) {
+    const lvl = s.marketingLevel || 0;
+    mktDisp.textContent = 'Level ' + lvl + ' ($' + (lvl * 5000).toLocaleString() + '/mo)';
+  }
 }
 
 /** Compliance check definitions: label, pass function, formatter */
@@ -335,7 +353,9 @@ export function updateLoanApps() {
   updateLoanApps._lastKey = key;
   // Preserve slider values across re-render
   const sliderVals = {};
+  const termVals = {};
   container.querySelectorAll('.app-rate-slider').forEach(sl => { sliderVals[sl.dataset.id] = sl.value; });
+  container.querySelectorAll('.term-btn.active').forEach(btn => { termVals[btn.dataset.id] = btn.dataset.term; });
   if (pending.length === 0) {
     container.innerHTML = '<div class="events-empty">No pending loan applications.</div>';
     return;
@@ -352,9 +372,12 @@ export function updateLoanApps() {
     const defaultRate = suggested !== null ? suggested : s.loanRate;
     const rate = savedRate !== undefined ? parseFloat(savedRate) : defaultRate;
     const rejectSuggested = suggested === null;
+    const savedTerm = termVals[e.loanRequestId];
+    const months = savedTerm ? parseInt(savedTerm) : (e.durationMonths || 12);
+    const monthlyPrincipal = e.loanAmount / months;
+    const monthlyRateVal = rate / 100 / 12;
+    const monthlyPmt = monthlyPrincipal + e.loanAmount * monthlyRateVal;
     const interest = e.loanAmount * rate / 100;
-    const months = e.durationMonths || 12;
-    const maturityTick = s.tick + months * TICKS_PER_MONTH;
     html += '<div class="la-entry' + (rejectSuggested ? ' la-suggest-reject' : '') + '" data-amount="' + e.loanAmount + '">';
     html += '<div class="la-top">';
     html += '<span class="la-id">' + e.loanRequestId + '</span>';
@@ -366,14 +389,17 @@ export function updateLoanApps() {
     html += '<input type="range" class="app-rate-slider" data-id="' + e.loanRequestId + '" min="0.5" max="20" step="0.25" value="' + rate.toFixed(2) + '">';
     html += '<span class="rate-slider-val" data-id="' + e.loanRequestId + '">' + rate.toFixed(2) + '%</span>';
     html += '</div>';
-    html += '<div class="la-dur-row">';
-    html += '<span class="la-rate-label">Term:</span>';
-    html += '<span class="dur-display">' + months + ' months</span>';
-    html += '<span class="la-maturity">Matures ' + gameDateStr(maturityTick) + '</span>';
+    html += '<div class="la-term-row">';
+    html += '<span class="la-term-label">Term:</span>';
+    for (const t of [12, 24, 36]) {
+      const active = t === months ? ' active' : '';
+      html += '<button class="term-btn' + active + '" data-action="set-term" data-id="' + e.loanRequestId + '" data-term="' + t + '">' + t + 'mo</button>';
+    }
     html += '</div>';
     html += '<div class="la-stats">';
-    html += '<span class="la-interest">Annual interest: +' + fmtDollar(interest).replace(/^\$/, '') + '</span>';
-    html += '<span class="la-prob">Default risk: ' + e.defaultProb.toFixed(1) + '%</span>';
+    html += '<span class="la-interest">Annual: +' + fmtDollar(interest).replace(/^\$/, '') + '</span>';
+    html += '<span class="la-pmt">mo: ' + fmtDollar(monthlyPmt) + '</span>';
+    html += '<span class="la-prob">Risk: ' + e.defaultProb.toFixed(1) + '%</span>';
     html += '</div>';
     html += '<div class="la-actions">';
     html += '<button class="event-btn approve" data-action="approve" data-id="' + e.loanRequestId + '">APPROVE</button>';
@@ -732,5 +758,28 @@ export function updateResearchTab() {
     riskHtml +
 
     '<div class="hr-section-title" style="margin-top:16px">Automated Underwriting <span class="tip" data-tip="When purchased, loan applications are auto-approved or auto-rejected using the Pricing Curve after 15 ticks, removing the need for manual decisions.">?</span></div>' +
-    autoHtml;
+    autoHtml +
+
+    // Branch expansion
+    (function() {
+      const bl = s.branchLevel || 0;
+      if (bl >= MAX_BRANCH_LEVEL) {
+        return '<div class="hr-section-title" style="margin-top:16px">Branch Network <span class="tip" data-tip="Each branch adds ' + BRANCH_CAPACITY_BONUS + ' loan officer capacity and boosts customer demand.">?</span></div>' +
+          '<div class="hr-detail-row" style="color:#2d8a4e;font-weight:600">✓ MAX LEVEL — +' + (bl * BRANCH_CAPACITY_BONUS) + ' capacity</div>';
+      }
+      const cost = BRANCH_COSTS[bl];
+      const canBuy = rp >= cost;
+      return '<div class="hr-section-title" style="margin-top:16px">Branch Network <span class="tip" data-tip="Each branch adds ' + BRANCH_CAPACITY_BONUS + ' loan officer capacity and boosts customer demand.">?</span></div>' +
+        '<div class="hr-stats" style="margin-bottom:4px">' +
+          '<div class="hr-stat"><div class="hr-stat-label">Branches</div><div class="hr-stat-value">' + bl + ' / ' + MAX_BRANCH_LEVEL + '</div></div>' +
+          '<div class="hr-stat"><div class="hr-stat-label">Capacity Bonus</div><div class="hr-stat-value">+' + (bl * BRANCH_CAPACITY_BONUS) + '</div></div>' +
+          '<div class="hr-stat"><div class="hr-stat-label">Next Cost</div><div class="hr-stat-value">' + cost + ' RP</div></div>' +
+        '</div>' +
+        '<div class="hr-actions">' +
+          '<button class="hr-btn hire" data-action="buy-branch"' + (canBuy ? '' : ' disabled') + '>Open Branch ' + (bl + 1) + '</button>' +
+        '</div>' +
+        '<div class="hr-detail">' +
+          '<div class="hr-detail-row"><span>Each branch adds ' + BRANCH_CAPACITY_BONUS + ' loan officer capacity and attracts more customers.</span></div>' +
+        '</div>';
+    })();
 }

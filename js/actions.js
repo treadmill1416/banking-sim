@@ -14,6 +14,8 @@ export function approveLoan(id) {
   if (!entry || entry.approved !== undefined) return;
   const rateSlider = document.querySelector(`.app-rate-slider[data-id="${id}"]`);
   const rate = rateSlider ? parseFloat(rateSlider.value) || s.loanRate : s.loanRate;
+  const activeTerm = document.querySelector(`.term-btn.active[data-id="${id}"]`);
+  if (activeTerm) entry.durationMonths = parseInt(activeTerm.dataset.term);
   processLoanApproval(s, entry, rate);
 }
 

@@ -73,6 +73,7 @@ function tick() {
   updatePnlDisplay();
   if (s.tick % 2 === 0) { updateLedgerDisplay(); updateAccountingTab(); }
   updateCharts();
+  updateRiskGraph();
   updateEventLog();
   updateLoanApps();
   updateAcceptedLoans();
@@ -476,6 +477,7 @@ function bindEvents() {
       if (this.dataset.tab === 'accounting') updateAccountingTab();
       if (this.dataset.tab === 'loans') { updateLoanOfficers(getState()); updateLoanApps(); updateAcceptedLoans(); updateCharts(); }
       if (this.dataset.tab === 'research') updateResearchTab();
+      if (this.dataset.tab === 'dashboard') updateRiskGraph();
     });
   });
 }

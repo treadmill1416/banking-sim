@@ -59,7 +59,7 @@ function inPlot(px, py) {
 function cacheDims() {
   const container = svg.parentElement;
   W = container.clientWidth || 640;
-  H = 300;
+  H = Math.max(200, Math.min(300, Math.round(W * 0.45)));
   innerW = W - MARGIN.left - MARGIN.right;
   innerH = H - MARGIN.top - MARGIN.bottom;
   dimsCached = true;
@@ -266,16 +266,25 @@ function onPointerUp(e) {
 
 function onTouchStart(e) {
   e.preventDefault();
+  if (e.touches.length === 0) return;
   const { x, y } = getTouchCoords(e);
-  const el = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY);
-  if (el && el.closest) {
-    const circle = el.closest('circle');
-    if (circle) {
+  const target = e.target;
+  // Check if touching a circle (the SVG circles are actual DOM nodes after innerHTML)
+  if (target && target.tagName === 'circle' && target.dataset && target.dataset.idx !== undefined) {
+    dragIdx = parseInt(target.dataset.idx);
+    draggedOut = false;
+    return;
+  }
+  // Check if touching a child of a circle (text label or other child)
+  if (target && target.closest) {
+    const circle = target.closest('circle');
+    if (circle && circle.dataset && circle.dataset.idx !== undefined) {
       dragIdx = parseInt(circle.dataset.idx);
       draggedOut = false;
       return;
     }
   }
+  // Add new point on empty space
   const map = getMap();
   if (map.length >= 20) return;
   const risk = clamp(snap(pxToX(x), X_STEP), X_MIN, X_MAX);
@@ -289,6 +298,7 @@ function onTouchStart(e) {
 
 function onTouchMove(e) {
   e.preventDefault();
+  if (e.touches.length === 0) return;
   if (dragIdx < 0) return;
   const { x, y } = getTouchCoords(e);
   processPointerMove(x, y);

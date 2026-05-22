@@ -19,6 +19,7 @@
   <div class="header-controls">
     <button class="speed-btn" data-speed="1">1×</button>
     <button class="speed-btn" data-speed="3">3×</button>
+    <button class="speed-btn" data-speed="5">5×</button>
     <button class="speed-btn" data-speed="10">10×</button>
     <button class="speed-btn" data-speed="100">100×</button>
     <button class="pause-btn" id="pauseBtn">⏸</button>
@@ -36,11 +37,14 @@
   <button class="debug-btn" id="finishGameBtn">Finish Game</button>
 </div>
 
+<!-- Top metrics strip: visible across all tabs -->
+<div class="top-metrics" id="topMetrics"></div>
+
 <!-- Tab bar: Dashboard / Accounting -->
 <div class="tab-bar">
   <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
   <button class="tab-btn" data-tab="accounting">Accounting</button>
-  <button class="tab-btn" data-tab="loans">Loans</button>
+  <button class="tab-btn" data-tab="loans">Loans <span class="tab-badge" id="loansBadge"></span></button>
   <button class="tab-btn" data-tab="policies">Policies</button>
   <button class="tab-btn" data-tab="research">Research</button>
 </div>
@@ -235,6 +239,16 @@
         <button class="cb-btn borrow" id="cbBorrowBtn">Borrow</button>
         <button class="cb-btn repay" id="cbRepayBtn">Repay</button>
       </div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Marketing &amp; Growth</h2>
+    <div class="slider-group">
+      <div class="slider-label">
+        <span>Marketing Spend <span class="tip" data-tip="Monthly spend to attract more customers. Boosts loan applications and deposit inflows.">?</span></span>
+        <span class="rate-val" id="marketingLevelDisplay">Level 0 ($0/mo)</span>
+      </div>
+      <input type="range" id="marketingSlider" min="0" max="5" step="1" value="0">
     </div>
   </div>
   <div class="card">

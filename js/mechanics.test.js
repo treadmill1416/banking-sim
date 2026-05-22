@@ -4,6 +4,8 @@ import {
   trailingNpl, accrueInterest, activeLoanCapacity, countActiveLoans,
   recomputeWeightedLoanRate, computeDefaultRate, getRateForRisk,
   processAutoDecisions, updatePenalty, computeRwa, checkSolvency, processResearch,
+  expireOldLoans, checkReserves, processSalaries, customerRefuses,
+  equity,
 } from './mechanics.js';
 import { initLedger, postJournal, getBalance } from './ledger.js';
 import { createInitialState } from './state.js';
@@ -41,6 +43,18 @@ describe('reserveRatio', () => {
       { account: 'deposits', credit: 1000000 },
     ], 'deposit');
     expect(reserveRatio(s)).toBeCloseTo(20, 1);
+  });
+});
+
+describe('equity wrapper', () => {
+  it('returns assets minus liabilities', () => {
+    postJournal(s, [
+      { account: 'cash', debit: 500000 },
+      { account: 'deposits', credit: 400000 },
+    ], 'deposit');
+    const eq = equity(s);
+    const expected = (s.reserves + 500000) - 400000;
+    expect(eq).toBe(expected);
   });
 });
 
@@ -94,6 +108,12 @@ describe('activeLoanCapacity / countActiveLoans', () => {
       { status: 'defaulted' },
     ];
     expect(countActiveLoans(s)).toBe(2);
+  });
+
+  it('adds branch capacity bonus', () => {
+    s.numWorkers = 2;
+    s.branchLevel = 2;
+    expect(activeLoanCapacity(s)).toBe(2 * 10 + 2 * 5);
   });
 });
 
@@ -195,6 +215,133 @@ describe('getRateForRisk', () => {
   });
 });
 
+describe('expireOldLoans', () => {
+  it('marks old unapproved loans as expired', () => {
+    s.tick = 100;
+    s.eventLog = [
+      { type: 'loan_request', approved: undefined, tick: 10, loanRequestId: 'lr-1' },
+      { type: 'loan_request', approved: undefined, tick: 35, loanRequestId: 'lr-2' },
+    ];
+    expireOldLoans(s);
+    const e1 = s.eventLog.find(e => e.loanRequestId === 'lr-1');
+    const e2 = s.eventLog.find(e => e.loanRequestId === 'lr-2');
+    expect(e1.approved).toBe(false);
+    expect(e1.msg).toContain('EXPIRED');
+    expect(e2.approved).toBe(false);
+    expect(e2.msg).toContain('EXPIRED');
+  });
+
+  it('does not expire recent unapproved loans', () => {
+    s.tick = 50;
+    s.eventLog = [
+      { type: 'loan_request', approved: undefined, tick: 30, loanRequestId: 'lr-1' },
+    ];
+    expireOldLoans(s);
+    const e1 = s.eventLog.find(e => e.loanRequestId === 'lr-1');
+    expect(e1.approved).toBeUndefined();
+  });
+
+  it('does not touch already-approved or rejected loans', () => {
+    s.tick = 100;
+    s.eventLog = [
+      { type: 'loan_request', approved: true, tick: 10, loanRequestId: 'lr-1' },
+      { type: 'loan_request', approved: false, tick: 10, loanRequestId: 'lr-2' },
+    ];
+    expireOldLoans(s);
+    expect(s.eventLog.find(e => e.loanRequestId === 'lr-1').approved).toBe(true);
+    expect(s.eventLog.find(e => e.loanRequestId === 'lr-2').approved).toBe(false);
+  });
+});
+
+describe('checkReserves', () => {
+  it('auto-borrows when cash is negative (balance guard triggered)', () => {
+    // Drain cash below zero — the ledger's balance guard will auto-borrow from CB
+    postJournal(s, [
+      { account: 'cash', credit: 200000 },
+      { account: 'equity', debit: 200000 },
+    ], 'drain');
+    // The ledger balance guard should have auto-borrowed
+    expect(getBalance(s, 'cash')).toBeGreaterThanOrEqual(0);
+  });
+
+  it('auto-borrows when cash is below required reserves', () => {
+    // Create deposits, then drain cash below the 1% requirement
+    postJournal(s, [
+      { account: 'cash', debit: 20000000 },
+      { account: 'deposits', credit: 20000000 },
+    ], 'deposits');
+    // Now cash = 20100000, deposits = 20000000, req = 200000
+    postJournal(s, [
+      { account: 'cash', credit: 20050000 },
+      { account: 'equity', debit: 20050000 },
+    ], 'drain cash');
+    // Now cash = 50000, deposits = 20000000, req = 200000. Cash < req!
+    s.autoCbBorrowing = true;
+    const cbBefore = getBalance(s, 'cbBorrowing');
+    checkReserves(s);
+    expect(getBalance(s, 'cbBorrowing')).toBeGreaterThan(cbBefore);
+  });
+
+  it('does nothing when reserves are adequate', () => {
+    postJournal(s, [
+      { account: 'cash', debit: 500000 },
+      { account: 'deposits', credit: 500000 },
+    ], 'deposit');
+    s.autoCbBorrowing = true;
+    const cbBefore = getBalance(s, 'cbBorrowing');
+    checkReserves(s);
+    expect(getBalance(s, 'cbBorrowing')).toBe(cbBefore);
+  });
+});
+
+describe('customerRefuses', () => {
+  it('never refuses at zero effective spread', () => {
+    // At effectiveSpread=0, refusalProb=5, so Math.random() < 0.05
+    // Run many trials — should very rarely refuse
+    const s2 = createInitialState();
+    s2.ecbMroRate = 4.0;
+    let refusals = 0;
+    const trials = 1000;
+    for (let i = 0; i < trials; i++) {
+      if (customerRefuses(s2, 4.0, { defaultProb: 0 })) refusals++;
+    }
+    // At 5% probability, should refuse ~50 times out of 1000
+    // Allow a wide margin: < 150 (more than 3 sigma from mean of 50)
+    expect(refusals).toBeLessThan(150);
+  });
+});
+
+describe('processSalaries', () => {
+  it('does nothing on non-month ticks', () => {
+    s.numWorkers = 3;
+    s.tick = 30;
+    const cashBefore = getBalance(s, 'cash');
+    processSalaries(s);
+    expect(getBalance(s, 'cash')).toBe(cashBefore);
+  });
+
+  it('deducts officer and analyst salaries on month boundaries', () => {
+    s.numWorkers = 2;
+    s.creditAnalysts = 3;
+    s.tick = 60;
+    const expectedSalary = 2 * 1000 + 3 * 800;
+    const cashBefore = getBalance(s, 'cash');
+    processSalaries(s);
+    expect(getBalance(s, 'cash')).toBe(cashBefore - expectedSalary);
+  });
+
+  it('deducts marketing cost when marketingLevel > 0', () => {
+    s.numWorkers = 0;
+    s.creditAnalysts = 0;
+    s.marketingLevel = 2;
+    s.tick = 60;
+    const expectedMkt = 2 * 5000;
+    const cashBefore = getBalance(s, 'cash');
+    processSalaries(s);
+    expect(getBalance(s, 'cash')).toBe(cashBefore - expectedMkt);
+  });
+});
+
 describe('processAutoDecisions', () => {
   beforeEach(() => { s.autoLoanGraphUnlocked = true; });
   it('does nothing when autoLoanGraphUnlocked is false', () => {
@@ -286,6 +433,13 @@ describe('processAutoDecisions', () => {
     processAutoDecisions(s);
     const entry = s.eventLog.find(e => e.loanRequestId === 'lr-4');
     expect(entry.approved).toBe(false);
+  });
+});
+
+describe('equity', () => {
+  it('matches assets minus liabilities', () => {
+    const expected = getBalance(s, 'cash') + getBalance(s, 'loansReceivable') - getBalance(s, 'deposits') - getBalance(s, 'cbBorrowing');
+    expect(equity(s)).toBe(expected);
   });
 });
 

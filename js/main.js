@@ -380,6 +380,7 @@ function onKeydown(e) {
   if (e.key === ' ' || e.key === 'Space') { e.preventDefault(); togglePause(); return; }
   if (e.key === '1') { setSpeed(1); return; }
   if (e.key === '3') { setSpeed(3); return; }
+  if (e.key === '5') { setSpeed(5); return; }
   if (e.key === '0') { setSpeed(100); return; }
   if (e.key === 'a' || e.key === 'A') {
     const s = getState();

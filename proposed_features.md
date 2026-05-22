@@ -140,15 +140,69 @@ Medium-High (~150 lines). Adds asset-liability management depth.
 
 ---
 
+---
+
+## Phase 11 — AI Competitor Banks
+
+**Problem:** You run a single bank in isolation. No competitive pressure, no market dynamics.
+
+### Implementation
+
+- 2-3 simple simulated competitor banks that adjust deposit/loan rates dynamically
+- Their rates influence your deposit flight risk and loan demand — you're no longer the only game in town
+- Each competitor has a simple AI: targets a spread over MRO, adjusts rates based on market share
+- Display competitor rates in the Policies tab for comparison
+
+### Complexity
+High (~200 lines). Adds strategic depth but requires careful balancing.
+
+---
+
+## Phase 12 — Securitization / Loan Sales
+
+**Problem:** No way to remove loans from the balance sheet once originated.
+
+### Implementation
+
+- A "Sell Loans" button in the Loans tab that packages selected loans and sells them at a discount
+- Removes loans from the balance sheet, frees up capital, generates fee income
+- Recourse vs non-recourse options
+- Pricing based on portfolio quality and market conditions
+
+### Complexity
+Medium (~120 lines). Adds asset-liability management flexibility.
+
+---
+
+## Phase 13 — Stress Testing Tool (Unlockable via Research)
+
+**Problem:** Players have no way to see how their portfolio would behave under adverse conditions.
+
+### Implementation
+
+- A "Run Scenario" button in the Research tab, unlockable at Research Level 3 (cost: 15 RP)
+- Applies a temporary regime + default multiplier to your current portfolio
+- Shows projected capital adequacy, NPL ratio, and P&L impact without actually changing state
+- Three scenarios: Mild recession, Severe recession, Bank run
+- Stored results visible in a new "Stress Tests" card
+
+### Complexity
+Low-Medium (~80 lines). Gives players a risk management tool and makes research points feel more valuable.
+
+---
+
 ## Summary by Priority
 
 | Priority | Feature | Complexity | Why |
-|---|---|---|---|
+|---|---|---|---|---|
 | High | Expected credit loss provisions | Medium-High | Major accounting realism gap |
 | High | Tiered capital + retained earnings | Medium | Basel concept, accounting fix |
 | High | LCR | Medium | Replaces arbitrary liquidity rule |
 | Medium | Interbank market | Medium | Funding diversification |
 | Medium | Corporate tax | Low | Simple, visible impact on P&L |
 | Medium | Large exposure limits | Low | Prevents degenerate strategies |
+| Medium | Stress testing tool (research-locked) | Low-Medium | Risk management + RP sink |
+| Medium | Securitization / loan sales | Medium | ALM flexibility |
+| Low | AI competitor banks | High | Competitive depth, needs balancing |
 | Low | Operational risk events | Low | Adds variety |
 | Low | Securities portfolio | Medium-High | LCR + ALM depth |

@@ -358,6 +358,7 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 .risk-graph-hint{font-size:12px;color:#9b9b9b;text-align:center;padding:6px 0 0 0;line-height:1.4}
 .ggrid{stroke:#e0e0e0;stroke-width:1}
 .ggrid-major{stroke:#ccc;stroke-width:1}
+.ggrid-minor{stroke:#f0f0f0;stroke-width:0.5}
 .glabel{font-family:Helvetica,Arial,sans-serif;font-size:10px;fill:#9b9b9b}
 .plabel{font-family:Helvetica,Arial,sans-serif;font-size:10px;font-weight:600}
 .point-label{font-family:Helvetica,Arial,sans-serif;font-size:10px;font-weight:600}

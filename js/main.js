@@ -5,7 +5,7 @@ import { approveLoan, rejectLoan, cbBorrow, cbRepay } from './actions.js';
 import { fmtDollar, gameDateStr, fmtTicks } from './utils.js';
 import { updateUI, updateEventLog, updateLoanApps, updatePnlDisplay, updateAcceptedLoans, updateLedgerDisplay, updateAccountingTab, updateLoanOfficers, updateResearchTab } from './ui.js';
 import { updateCharts } from './charts.js';
-import { HISTORY_MAX, LOANS_PER_OFFICER, RESEARCH_ESTIMATE_COSTS, RESEARCH_AUTO_GRAPH_COST, TICKS_PER_YEAR, MAX_RISK_ESTIMATE_LEVEL, MAX_BRANCH_LEVEL, MARKETING_COST_PER_LEVEL, MARKETING_MAX_LEVEL } from './constants.js';
+import { HISTORY_MAX, LOANS_PER_OFFICER, RESEARCH_ESTIMATE_COSTS, RESEARCH_AUTO_GRAPH_COST, TICKS_PER_YEAR, MAX_RISK_ESTIMATE_LEVEL, MAX_BRANCH_LEVEL, BRANCH_COSTS, MARKETING_COST_PER_LEVEL, MARKETING_MAX_LEVEL } from './constants.js';
 import { addEvent } from './state.js';
 import { initAdmin } from './admin.js';
 import { initTesting, updateDebugEquity } from './testing.js';

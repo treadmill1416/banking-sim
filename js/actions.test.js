@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { rejectLoan, cbBorrow, cbRepay } from './actions.js';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { approveLoan, rejectLoan, cbBorrow, cbRepay } from './actions.js';
 import { getState, setState, createInitialState } from './state.js';
 import { initLedger, postJournal, getBalance } from './ledger.js';
 
@@ -11,8 +11,14 @@ beforeEach(() => {
   s.loans = 0;
   s.deposits = 0;
   s.cbBorrowing = 0;
+  s.numWorkers = 2;
   initLedger(s);
   setState(s);
+  // Seed deposits so loans can be approved
+  postJournal(s, [
+    { account: 'cash', debit: 500000 },
+    { account: 'deposits', credit: 500000 },
+  ], 'seed');
   // Mock DOM for cbBorrow/cbRepay that read from an input element
   vi.stubGlobal('document', {
     getElementById: vi.fn((id) => {
@@ -20,6 +26,80 @@ beforeEach(() => {
       return null;
     }),
     querySelector: vi.fn(() => null),
+  });
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+describe('approveLoan', () => {
+  function addLoanRequest() {
+    const entry = {
+      type: 'loan_request',
+      approved: undefined,
+      loanAmount: 100000,
+      defaultProb: 5,
+      trueDefaultProb: 5,
+      loanRequestId: 'lr-1',
+      durationMonths: 12,
+      msg: 'Loan request',
+      cls: 'event-info',
+    };
+    s.eventLog.push(entry);
+    return entry;
+  }
+
+  it('approves a pending loan request', () => {
+    addLoanRequest();
+    vi.spyOn(Math, 'random').mockReturnValue(1.0);
+    approveLoan('lr-1');
+    const entry = s.eventLog.find(e => e.loanRequestId === 'lr-1');
+    expect(entry.approved).toBe(true);
+  });
+
+  it('does nothing for already-processed loan', () => {
+    addLoanRequest();
+    vi.spyOn(Math, 'random').mockReturnValue(1.0);
+    approveLoan('lr-1');
+    const entry = s.eventLog.find(e => e.loanRequestId === 'lr-1');
+    expect(entry.approved).toBe(true);
+    // Second call should do nothing
+    approveLoan('lr-1');
+    expect(entry.approved).toBe(true);
+  });
+
+  it('does nothing for non-existent loan request', () => {
+    expect(() => approveLoan('nonexistent')).not.toThrow();
+  });
+
+  it('uses rate from slider when available', () => {
+    addLoanRequest();
+    vi.spyOn(Math, 'random').mockReturnValue(1.0);
+    // Mock the rate slider and term button
+    const mockSlider = { value: '9.5' };
+    const mockTermBtn = { dataset: { term: '24' } };
+    vi.stubGlobal('document', {
+      getElementById: vi.fn(() => null),
+      querySelector: vi.fn((sel) => {
+        if (sel === '.app-rate-slider[data-id="lr-1"]') return mockSlider;
+        if (sel === '.term-btn.active[data-id="lr-1"]') return mockTermBtn;
+        return null;
+      }),
+    });
+    approveLoan('lr-1');
+    const entry = s.eventLog.find(e => e.loanRequestId === 'lr-1');
+    expect(entry.approved).toBe(true);
+    expect(entry.durationMonths).toBe(24);
+  });
+
+  it('handles missing rate slider gracefully', () => {
+    addLoanRequest();
+    vi.spyOn(Math, 'random').mockReturnValue(1.0);
+    // document.querySelector still returns null (from base mock)
+    approveLoan('lr-1');
+    const entry = s.eventLog.find(e => e.loanRequestId === 'lr-1');
+    expect(entry.approved).toBe(true);
   });
 });
 

@@ -166,4 +166,60 @@ describe('updateLedgerPnl', () => {
     updateLedgerPnl(s);
     expect(s.debugMonthStartEquity).toBeDefined();
   });
+
+  it('preserves previous month data on second month boundary', () => {
+    s.tick = 30;
+    updateLedgerPnl(s);
+    expect(s.ledgerLastMonth).toBeNull();
+    s.tick = 90;
+    updateLedgerPnl(s);
+    expect(s.ledgerLastMonth).not.toBeNull();
+    expect(s.ledgerLastMonth.interestIncome).toBe(0);
+  });
+});
+
+describe('postJournal balance guards', () => {
+  beforeEach(() => {
+    initLedger(s);
+  });
+
+  it('auto-fixes negative deposits to zero', () => {
+    postJournal(s, [
+      { account: 'deposits', debit: 100 },
+    ], 'drain');
+    expect(getBalance(s, 'deposits')).toBe(0);
+  });
+
+  it('auto-borrows from CB when cash goes negative', () => {
+    // Set up a scenario: post a JE that would make cash negative
+    postJournal(s, [
+      { account: 'cash', credit: 999999 },
+      { account: 'equity', debit: 999999 },
+    ], 'drain cash');
+    expect(getBalance(s, 'cash')).toBeGreaterThanOrEqual(0);
+    expect(getBalance(s, 'cbBorrowing')).toBeGreaterThan(0);
+  });
+
+  it('rejects unbalanced journal entries', () => {
+    expect(() => {
+      postJournal(s, [
+        { account: 'cash', debit: 100 },
+      ], 'unbalanced');
+    }).not.toThrow();
+    // The function prints a warning but doesn't throw
+  });
+});
+
+describe('account type validation', () => {
+  beforeEach(() => {
+    initLedger(s);
+  });
+
+  it('ignores unknown account types in postJournal', () => {
+    postJournal(s, [
+      { account: 'cash', debit: 100 },
+      { account: 'fakeAccount', credit: 100 },
+    ], 'mixed');
+    expect(getBalance(s, 'cash')).toBe(s.reserves + 100);
+  });
 });

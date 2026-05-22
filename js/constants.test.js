@@ -13,6 +13,11 @@ import {
   REGIME_LOAN_DEMAND, REGIME_ECB_BIAS, REGIME_DEFAULT_RISK,
   REGIME_DEPOSIT_MOD, DEFAULT_ANNUAL_RATE,
   PROB, ECB_RATE_NAMES,
+  RESEARCH_BASE_RELATIVE_ERROR, RESEARCH_POINTS_PER_ANALYST,
+  ANALYST_SALARY, RESEARCH_AUTO_GRAPH_COST, MAX_RISK_ESTIMATE_LEVEL,
+  RESEARCH_ESTIMATE_COSTS, MARKETING_MAX_LEVEL, MARKETING_COST_PER_LEVEL,
+  MARKETING_BOOST_PER_LEVEL, MAX_BRANCH_LEVEL, BRANCH_COSTS,
+  BRANCH_CAPACITY_BONUS, BRANCH_DEMAND_BONUS,
 } from './constants.js';
 
 describe('constants', () => {
@@ -84,5 +89,30 @@ describe('constants', () => {
 
   it('ECB_RATE_NAMES has three entries', () => {
     expect(ECB_RATE_NAMES).toHaveLength(3);
+  });
+
+  it('research constants are positive', () => {
+    expect(RESEARCH_POINTS_PER_ANALYST).toBeGreaterThan(0);
+    expect(ANALYST_SALARY).toBeGreaterThan(0);
+    expect(RESEARCH_AUTO_GRAPH_COST).toBeGreaterThan(0);
+    expect(MAX_RISK_ESTIMATE_LEVEL).toBeGreaterThan(0);
+  });
+
+  it('marketing constants are consistent', () => {
+    expect(MARKETING_MAX_LEVEL).toBe(5);
+    expect(MARKETING_COST_PER_LEVEL).toBeGreaterThan(0);
+    expect(MARKETING_COST_PER_LEVEL).toBe(5000);
+    expect(MARKETING_BOOST_PER_LEVEL).toBeGreaterThan(0);
+    expect(MARKETING_BOOST_PER_LEVEL).toBe(0.2);
+  });
+
+  it('branch expansion constants are consistent', () => {
+    expect(MAX_BRANCH_LEVEL).toBe(5);
+    expect(BRANCH_COSTS).toHaveLength(MAX_BRANCH_LEVEL);
+    expect(BRANCH_COSTS[0]).toBeLessThan(BRANCH_COSTS[1]);
+    expect(BRANCH_COSTS[BRANCH_COSTS.length - 1]).toBeGreaterThan(BRANCH_COSTS[0]);
+    expect(BRANCH_COSTS).toEqual([10, 20, 40, 80, 160]);
+    expect(BRANCH_CAPACITY_BONUS).toBe(5);
+    expect(BRANCH_DEMAND_BONUS).toBe(0.15);
   });
 });

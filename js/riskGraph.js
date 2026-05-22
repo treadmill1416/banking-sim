@@ -4,6 +4,8 @@ import { updateAll } from './main.js';
 const X_MIN = 0, X_MAX = 50, X_STEP = 0.5;
 const Y_MIN = 0, Y_MAX = 25, Y_STEP = 0.25;
 const REJECT_THRESHOLD = 20;
+const COMPRESS_POINT = 20;       // risk% where compression begins
+const COMPRESS_PORTION = 0.7;    // fraction of innerW given to 0..COMPRESS_POINT
 const MARGIN = { top: 16, right: 16, bottom: 28, left: 44 };
 
 let svg = null;
@@ -13,15 +15,32 @@ let dragIdx = -1;
 let draggedOut = false;
 let resizeObserver = null;
 
+/** Convert risk% to pixel X using a piecewise scale: 0..COMPRESS_POINT gets COMPRESS_PORTION of the width, the rest gets the remainder. */
 function xToPx(risk) {
-  return MARGIN.left + (risk - X_MIN) / (X_MAX - X_MIN) * innerW;
+  const clamped = Math.max(X_MIN, Math.min(X_MAX, risk));
+  const pivot = MARGIN.left + COMPRESS_PORTION * innerW;
+  const tail = MARGIN.left + innerW;
+  if (clamped <= COMPRESS_POINT) {
+    const t = (clamped - X_MIN) / (COMPRESS_POINT - X_MIN);
+    return MARGIN.left + t * (pivot - MARGIN.left);
+  }
+  const t = (clamped - COMPRESS_POINT) / (X_MAX - COMPRESS_POINT);
+  return pivot + t * (tail - pivot);
+}
+/** Inverse of xToPx: pixel X → risk% */
+function pxToX(px) {
+  const pivot = MARGIN.left + COMPRESS_PORTION * innerW;
+  const tail = MARGIN.left + innerW;
+  if (px <= pivot) {
+    const t = (px - MARGIN.left) / (pivot - MARGIN.left);
+    return X_MIN + t * (COMPRESS_POINT - X_MIN);
+  }
+  const t = (px - pivot) / (tail - pivot);
+  return COMPRESS_POINT + t * (X_MAX - COMPRESS_POINT);
 }
 function yToPx(rate) {
   if (rate === null || rate === undefined) rate = REJECT_THRESHOLD + 2.5;
   return MARGIN.top + (Y_MAX - rate) / (Y_MAX - Y_MIN) * innerH;
-}
-function pxToX(px) {
-  return X_MIN + ((px - MARGIN.left) / innerW) * (X_MAX - X_MIN);
 }
 function pxToY(py) {
   return Y_MAX - ((py - MARGIN.top) / innerH) * (Y_MAX - Y_MIN);
@@ -95,13 +114,21 @@ function render() {
     html += `<text x="${MARGIN.left - 4}" y="${py + 3.5}" text-anchor="end" class="glabel">${y}</text>`;
   }
 
-  // X-axis ticks
-  const X_TICKS = [0, 1, 2, 3, 4, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50];
+  // X-axis ticks — granular every 1% in 0..20, every 5% after
+  const X_TICKS = [];
+  for (let x = 0; x <= 20; x += 2) X_TICKS.push(x);
+  for (let x = 25; x <= 50; x += 5) X_TICKS.push(x);
   for (const x of X_TICKS) {
     const px = xToPx(x);
     const major = x % 10 === 0 || x === 5;
     html += `<line x1="${px}" y1="${MARGIN.top}" x2="${px}" y2="${MARGIN.top + innerH}" class="${major ? 'ggrid-major' : 'ggrid'}"/>`;
     html += `<text x="${px}" y="${MARGIN.top + innerH + 16}" text-anchor="middle" class="glabel">${x}</text>`;
+  }
+  // Extra faint gridlines every 1% in 0..20 for fine-grained reference
+  for (let x = 1; x < 20; x++) {
+    if (x % 2 === 0) continue;
+    const px = xToPx(x);
+    html += `<line x1="${px}" y1="${MARGIN.top}" x2="${px}" y2="${MARGIN.top + innerH}" class="ggrid-minor"/>`;
   }
 
   // Axis titles

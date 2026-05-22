@@ -265,7 +265,6 @@ function onPointerUp(e) {
 }
 
 function onTouchStart(e) {
-  e.preventDefault();
   if (e.touches.length === 0) return;
   const { x, y } = getTouchCoords(e);
   const target = e.target;
@@ -273,6 +272,7 @@ function onTouchStart(e) {
   if (target && target.tagName === 'circle' && target.dataset && target.dataset.idx !== undefined) {
     dragIdx = parseInt(target.dataset.idx);
     draggedOut = false;
+    e.preventDefault();
     return;
   }
   // Check if touching a child of a circle (text label or other child)
@@ -281,6 +281,7 @@ function onTouchStart(e) {
     if (circle && circle.dataset && circle.dataset.idx !== undefined) {
       dragIdx = parseInt(circle.dataset.idx);
       draggedOut = false;
+      e.preventDefault();
       return;
     }
   }
@@ -297,9 +298,8 @@ function onTouchStart(e) {
 }
 
 function onTouchMove(e) {
+  if (e.touches.length === 0 || dragIdx < 0) return;
   e.preventDefault();
-  if (e.touches.length === 0) return;
-  if (dragIdx < 0) return;
   const { x, y } = getTouchCoords(e);
   processPointerMove(x, y);
 }

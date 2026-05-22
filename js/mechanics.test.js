@@ -196,6 +196,25 @@ describe('getRateForRisk', () => {
 });
 
 describe('processAutoDecisions', () => {
+  beforeEach(() => { s.autoLoanGraphUnlocked = true; });
+  it('does nothing when autoLoanGraphUnlocked is false', () => {
+    s.autoLoanGraphUnlocked = false;
+    s.tick = 50;
+    s.eventLog = [{
+      type: 'loan_request',
+      approved: undefined,
+      tick: 30,
+      autoProcessAt: 45,
+      suggestedRate: 6.0,
+      defaultProb: 5,
+      loanAmount: 50000,
+      loanRequestId: 'lr-0',
+      durationMonths: 12,
+    }];
+    processAutoDecisions(s);
+    const entry = s.eventLog.find(e => e.loanRequestId === 'lr-0');
+    expect(entry.approved).toBeUndefined();
+  });
   it('auto-approves loan past autoProcessAt with a valid suggestedRate', () => {
     s.tick = 50;
     s.loanRecords = [];

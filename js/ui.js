@@ -1,7 +1,7 @@
 import { getState } from './state.js';
 import { reserveRatio, equity, totalAssets, computeNim, computeRwa, trailingNpl, computeDefaultRate, activeLoanCapacity, countActiveLoans } from './mechanics.js';
 import { fmtDollar, fmtPct, escapeHtml, gameDateStr, quarterStr, fmtTicks } from './utils.js';
-import { TICKS_PER_MONTH, TICKS_PER_YEAR, HISTORY_MAX, LOAN_DEFAULT_DURATION, LOANS_PER_OFFICER, SALARY_PER_OFFICER, ANALYST_SALARY } from './constants.js';
+import { TICKS_PER_MONTH, TICKS_PER_YEAR, HISTORY_MAX, LOAN_DEFAULT_DURATION, LOANS_PER_OFFICER, SALARY_PER_OFFICER, ANALYST_SALARY, RESEARCH_AUTO_GRAPH_COST, RESEARCH_ESTIMATE_COSTS, MAX_RISK_ESTIMATE_LEVEL, RESEARCH_BASE_RELATIVE_ERROR, RESEARCH_POINTS_PER_ANALYST } from './constants.js';
 import { getBalance, getNetIncome, getCurrentMonthPnl, ACCOUNT_TYPES } from './ledger.js';
 
 /** @module ui - All DOM rendering. Updates the dashboard (balance sheet, metrics, P&L, loan panels, event log) and accounting tab. */
@@ -612,45 +612,101 @@ export function updateAccountingTab() {
   }
 }
 
-/** Render the Human Resources tab: loan officers, credit analysts, capacity, research info. */
-export function updateHrTab() {
-  const s = getState();
-  const body = document.getElementById('hrBody');
+/** Render the loan officers section in the Loans tab. */
+export function updateLoanOfficers(s) {
+  const body = document.getElementById('loanOfficerBody');
   if (!body) return;
   const active = countActiveLoans(s);
   const cap = activeLoanCapacity(s);
   const officerCost = s.numWorkers * SALARY_PER_OFFICER;
-  const analystCost = (s.creditAnalysts || 0) * 800;
-  const totalCost = officerCost + analystCost;
-  const relErrorMargin = (0.5 / (1 + (s.researchPoints || 0) * 0.1) * 100).toFixed(1);
-  const analysts = s.creditAnalysts || 0;
-  const rp = s.researchPoints || 0;
-
   body.innerHTML =
-    '<div class="hr-section-title">Loan Officers</div>' +
     '<div class="hr-stats">' +
-      '<div class="hr-stat"><div class="hr-stat-label">Count</div><div class="hr-stat-value">' + s.numWorkers + '</div></div>' +
+      '<div class="hr-stat"><div class="hr-stat-label">Officers</div><div class="hr-stat-value">' + s.numWorkers + '</div></div>' +
       '<div class="hr-stat"><div class="hr-stat-label">Active Loans</div><div class="hr-stat-value">' + active + '</div></div>' +
       '<div class="hr-stat"><div class="hr-stat-label">Capacity</div><div class="hr-stat-value">' + active + ' / ' + cap + '</div></div>' +
-      '<div class="hr-stat"><div class="hr-stat-label">Salary Cost</div><div class="hr-stat-value">' + fmtDollar(officerCost) + '/mo</div></div>' +
+      '<div class="hr-stat"><div class="hr-stat-label">Salary</div><div class="hr-stat-value">' + fmtDollar(officerCost) + '/mo</div></div>' +
     '</div>' +
     '<div class="hr-actions">' +
       '<button class="hr-btn hire" data-action="hire"' + (s.paused === false ? '' : '') + '>Hire +1</button>' +
       '<button class="hr-btn fire" data-action="fire"' + (s.numWorkers <= 1 || active > (s.numWorkers - 1) * LOANS_PER_OFFICER ? ' disabled' : '') + '>Fire -1</button>' +
     '</div>' +
-    '<div class="hr-section-title" style="margin-top:16px">Credit Analysts</div>' +
+    '<div class="hr-detail">' +
+      '<div class="hr-detail-row"><span>Each officer manages up to <strong>' + LOANS_PER_OFFICER + '</strong> active loans. Salary: <strong>' + fmtDollar(SALARY_PER_OFFICER) + '</strong>/mo.</span></div>' +
+    '</div>';
+}
+
+/** Render the Research tab: analysts, research points, upgrades. */
+export function updateResearchTab() {
+  const s = getState();
+  const body = document.getElementById('researchBody');
+  if (!body) return;
+  const analysts = s.creditAnalysts || 0;
+  const analystCost = analysts * ANALYST_SALARY;
+  const rp = s.researchPoints || 0;
+  const riskLevel = s.riskEstimateLevel || 0;
+  const autoUnlocked = s.autoLoanGraphUnlocked || false;
+
+  // Error margin at current level
+  const errMargin = (RESEARCH_BASE_RELATIVE_ERROR / (1 + riskLevel) * 100).toFixed(1);
+
+  // Risk estimate upgrade
+  let riskHtml;
+  if (riskLevel >= MAX_RISK_ESTIMATE_LEVEL) {
+    riskHtml = '<div class="hr-detail-row" style="color:#2d8a4e;font-weight:600">✓ MAX LEVEL — Error: ±' + errMargin + '%</div>';
+  } else {
+    const cost = RESEARCH_ESTIMATE_COSTS[riskLevel];
+    const canBuy = rp >= cost;
+    riskHtml =
+      '<div class="hr-stats" style="margin-bottom:4px">' +
+        '<div class="hr-stat"><div class="hr-stat-label">Level</div><div class="hr-stat-value">' + riskLevel + ' / ' + MAX_RISK_ESTIMATE_LEVEL + '</div></div>' +
+        '<div class="hr-stat"><div class="hr-stat-label">Error</div><div class="hr-stat-value">±' + errMargin + '%</div></div>' +
+        '<div class="hr-stat"><div class="hr-stat-label">Next Cost</div><div class="hr-stat-value">' + cost + ' RP</div></div>' +
+      '</div>' +
+      '<div class="hr-actions">' +
+        '<button class="hr-btn hire" data-action="buy-risk-estimate"' + (canBuy ? '' : ' disabled') + '>Buy Level ' + (riskLevel + 1) + '</button>' +
+      '</div>';
+  }
+
+  // Auto loan processing upgrade
+  let autoHtml;
+  if (autoUnlocked) {
+    autoHtml = '<div class="hr-detail-row" style="color:#2d8a4e;font-weight:600">✓ PURCHASED — Loans are auto-processed via risk graph</div>';
+  } else {
+    const canBuy = rp >= RESEARCH_AUTO_GRAPH_COST;
+    autoHtml =
+      '<div class="hr-stats" style="margin-bottom:4px">' +
+        '<div class="hr-stat"><div class="hr-stat-label">Status</div><div class="hr-stat-value">🔒 Locked</div></div>' +
+        '<div class="hr-stat"><div class="hr-stat-label">Cost</div><div class="hr-stat-value">' + RESEARCH_AUTO_GRAPH_COST + ' RP</div></div>' +
+      '</div>' +
+      '<div class="hr-actions">' +
+        '<button class="hr-btn hire" data-action="buy-auto-graph"' + (canBuy ? '' : ' disabled') + '>Purchase</button>' +
+      '</div>' +
+      '<div class="hr-detail">' +
+        '<div class="hr-detail-row"><span>Auto-approves or rejects loan applications using the risk graph after 15 ticks, removing the need for manual decisions.</span></div>' +
+      '</div>';
+  }
+
+  body.innerHTML =
+    '<div class="research-points-bar">' +
+      '<span class="research-rp-label">Research Points</span>' +
+      '<span class="research-rp-value">⭐ ' + rp + '</span>' +
+    '</div>' +
+
+    '<div class="hr-section-title">Credit Analysts</div>' +
     '<div class="hr-stats">' +
       '<div class="hr-stat"><div class="hr-stat-label">Analysts</div><div class="hr-stat-value">' + analysts + '</div></div>' +
-      '<div class="hr-stat"><div class="hr-stat-label">Research Points</div><div class="hr-stat-value">' + rp + '</div></div>' +
-      '<div class="hr-stat"><div class="hr-stat-label">Risk Error</div><div class="hr-stat-value">±' + relErrorMargin + '%</div></div>' +
-      '<div class="hr-stat"><div class="hr-stat-label">Salary Cost</div><div class="hr-stat-value">' + fmtDollar(analystCost) + '/mo</div></div>' +
+      '<div class="hr-stat"><div class="hr-stat-label">Yield</div><div class="hr-stat-value">' + (analysts * RESEARCH_POINTS_PER_ANALYST) + ' / mo</div></div>' +
+      '<div class="hr-stat"><div class="hr-stat-label">Cost</div><div class="hr-stat-value">' + fmtDollar(analystCost) + '/mo</div></div>' +
     '</div>' +
     '<div class="hr-actions">' +
       '<button class="hr-btn hire" data-action="hire-analyst"' + (s.paused === false ? '' : '') + '>Hire +1</button>' +
       '<button class="hr-btn fire" data-action="fire-analyst"' + (analysts <= 0 ? ' disabled' : '') + '>Fire -1</button>' +
     '</div>' +
-    '<div class="hr-detail">' +
-      '<div class="hr-detail-row"><span>Each loan officer manages up to <strong>' + LOANS_PER_OFFICER + '</strong> active loans. Salary: <strong>' + fmtDollar(SALARY_PER_OFFICER) + '</strong>/mo.</span></div>' +
-      '<div class="hr-detail-row"><span>Credit analysts improve default risk estimation. Each analyst produces <strong>1 research point/month</strong>, reducing the relative error in displayed default probabilities. Salary: <strong>$800</strong>/mo.</span></div>' +
-    '</div>';
+
+    '<div class="hr-section-title" style="margin-top:16px">Risk Estimation</div>' +
+    '<div class="hr-detail-row" style="margin-bottom:6px">Reduces the relative error in displayed default probabilities.</div>' +
+    riskHtml +
+
+    '<div class="hr-section-title" style="margin-top:16px">Auto Loan Processing</div>' +
+    autoHtml;
 }

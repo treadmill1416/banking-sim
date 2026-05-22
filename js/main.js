@@ -3,9 +3,9 @@ import { accrueInterest, processDefaults, checkReserves, expireOldLoans, process
 import { tryDepositFlow, tryLoanRequest, tryEcbChange, tryRegimeChange } from './events.js';
 import { approveLoan, rejectLoan, cbBorrow, cbRepay } from './actions.js';
 import { fmtDollar, gameDateStr } from './utils.js';
-import { updateUI, updateEventLog, updateLoanApps, updatePnlDisplay, updateAcceptedLoans, updateLedgerDisplay, updateAccountingTab, updateHrTab } from './ui.js';
+import { updateUI, updateEventLog, updateLoanApps, updatePnlDisplay, updateAcceptedLoans, updateLedgerDisplay, updateAccountingTab, updateLoanOfficers, updateResearchTab } from './ui.js';
 import { updateCharts } from './charts.js';
-import { HISTORY_MAX, LOANS_PER_OFFICER } from './constants.js';
+import { HISTORY_MAX, LOANS_PER_OFFICER, RESEARCH_ESTIMATE_COSTS, RESEARCH_AUTO_GRAPH_COST } from './constants.js';
 import { addEvent } from './state.js';
 import { initAdmin } from './admin.js';
 import { initTesting, updateDebugEquity } from './testing.js';
@@ -257,6 +257,28 @@ function onFireAnalyst() {
   addEvent(s, 'hr', 'Fired a credit analyst — now ' + s.creditAnalysts + ' total', 'event-expense');
   updateAll();
 }
+/** Buy the next level of risk estimation. */
+function onBuyRiskEstimate() {
+  const s = getState();
+  const level = s.riskEstimateLevel || 0;
+  if (level >= 5) return;
+  const cost = RESEARCH_ESTIMATE_COSTS[level];
+  if ((s.researchPoints || 0) < cost) return;
+  s.researchPoints -= cost;
+  s.riskEstimateLevel = level + 1;
+  addEvent(s, 'research', 'Risk estimation upgraded to level ' + s.riskEstimateLevel + ' (error: ±' + (50 / (1 + s.riskEstimateLevel)).toFixed(1) + '%)', 'event-info');
+  updateAll();
+}
+/** Buy auto loan graph processing. */
+function onBuyAutoGraph() {
+  const s = getState();
+  if (s.autoLoanGraphUnlocked) return;
+  if ((s.researchPoints || 0) < RESEARCH_AUTO_GRAPH_COST) return;
+  s.researchPoints -= RESEARCH_AUTO_GRAPH_COST;
+  s.autoLoanGraphUnlocked = true;
+  addEvent(s, 'research', 'Auto loan processing unlocked! Loans will now be processed automatically via the risk graph.', 'event-income');
+  updateAll();
+}
 
 /** Refresh all UI displays and save state. Used after any player action (approve/reject/borrow/repay). */
 export function updateAll() {
@@ -264,7 +286,8 @@ export function updateAll() {
   updatePnlDisplay();
   updateLedgerDisplay();
   updateAccountingTab();
-  updateHrTab();
+  updateLoanOfficers(getState());
+  updateResearchTab();
   updateCharts();
   updateEventLog();
   updateLoanApps();
@@ -280,13 +303,19 @@ function bindEvents() {
   document.getElementById('pauseBtn').addEventListener('click', togglePause);
   document.getElementById('resetBtn').addEventListener('click', resetGame);
   document.getElementById('loanAppsList').addEventListener('click', onLoanAppsClick);
-  document.getElementById('hrBody').addEventListener('click', function (e) {
+  document.getElementById('loanOfficerBody').addEventListener('click', function (e) {
     const btn = e.target.closest('[data-action]');
     if (!btn) return;
     if (btn.dataset.action === 'hire') onHireClick();
     if (btn.dataset.action === 'fire') onFireClick();
+  });
+  document.getElementById('researchBody').addEventListener('click', function (e) {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
     if (btn.dataset.action === 'hire-analyst') onHireAnalyst();
     if (btn.dataset.action === 'fire-analyst') onFireAnalyst();
+    if (btn.dataset.action === 'buy-risk-estimate') onBuyRiskEstimate();
+    if (btn.dataset.action === 'buy-auto-graph') onBuyAutoGraph();
   });
   document.getElementById('loanAppsList').addEventListener('input', function (e) {
     const slider = e.target.closest('.app-rate-slider');
@@ -327,8 +356,8 @@ function bindEvents() {
       this.classList.add('active');
       document.getElementById('tab' + this.dataset.tab.charAt(0).toUpperCase() + this.dataset.tab.slice(1)).classList.add('active');
       if (this.dataset.tab === 'accounting') updateAccountingTab();
-      if (this.dataset.tab === 'loans') { updateLoanApps(); updateAcceptedLoans(); updateCharts(); }
-      if (this.dataset.tab === 'hr') updateHrTab();
+      if (this.dataset.tab === 'loans') { updateLoanOfficers(getState()); updateLoanApps(); updateAcceptedLoans(); updateCharts(); }
+      if (this.dataset.tab === 'research') updateResearchTab();
     });
   });
 }

@@ -44,9 +44,11 @@ export const NEGATIVE_EQUITY_CB_SPREAD_PREMIUM = 1.0;
 
 // Research / credit analysis
 export const RESEARCH_BASE_RELATIVE_ERROR = 0.5;
-export const RESEARCH_ERROR_DECAY = 0.1;
 export const RESEARCH_POINTS_PER_ANALYST = 1;
 export const ANALYST_SALARY = 800;
+export const RESEARCH_AUTO_GRAPH_COST = 10;
+export const MAX_RISK_ESTIMATE_LEVEL = 5;
+export const RESEARCH_ESTIMATE_COSTS = [3, 6, 12, 24, 48];
 
 export const INITIAL = {
   tick: 0,
@@ -91,6 +93,8 @@ export const INITIAL = {
   ticksNegativeEquity: 0,
   creditAnalysts: 0,
   researchPoints: 0,
+  riskEstimateLevel: 0,
+  autoLoanGraphUnlocked: false,
   ledgerJournal: [], ledgerBalances: {}, ledgerNextId: 1,   _dailyInt: { depoInt: 0, resInt: 0, cbInt: 0 }, ledgerMonthStart: null, ledgerLastMonth: null,
   penaltyPoints: 0,
   loanRecords: [],

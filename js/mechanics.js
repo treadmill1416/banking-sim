@@ -412,6 +412,7 @@ export function checkReserves(s) {
  *  Loans past their autoProcessAt tick get approved/rejected according to the graph.
  *  @param {object} s */
 export function processAutoDecisions(s) {
+  if (!s.autoLoanGraphUnlocked) return;
   for (const e of s.eventLog) {
     if (e.type !== 'loan_request' || e.approved !== undefined) continue;
     if (s.tick < e.autoProcessAt) continue;

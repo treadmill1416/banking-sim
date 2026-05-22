@@ -1,4 +1,4 @@
-import { REGIME_ECB_BIAS, REGIME_DEFAULT_RISK, REGIME_DEPOSIT_MOD, REGIME_TRANSITIONS, REGIME_NAMES, ECB_RATE_NAMES, CB_SPREAD, RATE_MIN, RATE_MAX, PROB, TICKS_PER_MONTH, APPLICATIONS_PER_OFFICER, REGIME_LOAN_DEMAND, RESEARCH_BASE_RELATIVE_ERROR, RESEARCH_ERROR_DECAY, NEGATIVE_EQUITY_DEPO_MULTIPLIER } from './constants.js';
+import { REGIME_ECB_BIAS, REGIME_DEFAULT_RISK, REGIME_DEPOSIT_MOD, REGIME_TRANSITIONS, REGIME_NAMES, ECB_RATE_NAMES, CB_SPREAD, RATE_MIN, RATE_MAX, PROB, TICKS_PER_MONTH, APPLICATIONS_PER_OFFICER, REGIME_LOAN_DEMAND, RESEARCH_BASE_RELATIVE_ERROR, NEGATIVE_EQUITY_DEPO_MULTIPLIER } from './constants.js';
 import { addEvent } from './state.js';
 import { getRateForRisk, totalAssets, equity } from './mechanics.js';
 import { postJournal, getBalance } from './ledger.js';
@@ -88,8 +88,8 @@ export function tryLoanRequest(s) {
   const riskMult = REGIME_DEFAULT_RISK[s.regime];
   const trueDefaultProb = Math.min((1 + Math.random() * 35) * riskMult, 50);
 
-  // Apply research-based relative error to the displayed probability
-  const relErrorMargin = RESEARCH_BASE_RELATIVE_ERROR / (1 + (s.researchPoints || 0) * RESEARCH_ERROR_DECAY);
+  // Research-based relative error — shrinks as risk estimate level increases
+  const relErrorMargin = RESEARCH_BASE_RELATIVE_ERROR / (1 + (s.riskEstimateLevel || 0));
   const relError = (Math.random() - 0.5) * 2 * relErrorMargin;
   const displayedRisk = Math.max(0, Math.min(50, trueDefaultProb * (1 + relError)));
 

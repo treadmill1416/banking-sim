@@ -326,6 +326,11 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 .hr-warn{background:#fef2f2;color:#cc0000;border:1px solid #f5c6c6;border-radius:4px;padding:8px 10px;margin-bottom:8px;font-size:12px;font-weight:600;text-align:center}
 .hr-section-title{font-size:13px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:0.5px;margin:8px 0 6px 0;padding:0 2px}
 
+/* Research tab */
+.research-points-bar{display:flex;justify-content:space-between;align-items:center;background:#1a1a2e;color:#fff;padding:12px 16px;border-radius:8px;margin-bottom:16px}
+.research-rp-label{font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px}
+.research-rp-value{font-size:24px;font-weight:700;font-family:'SF Mono','Cascadia Code','Consolas',monospace}
+
 /* Risk graph card */
 .risk-graph-card .risk-graph-container{width:100%;overflow:hidden}
 .risk-graph-card svg{display:block;width:100%;height:auto;user-select:none}

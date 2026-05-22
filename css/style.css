@@ -85,11 +85,12 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 .tm-value.tm-warn{color:#d97706}
 
 /* === Tab Navigation === */
-.tab-bar{display:flex;gap:0;margin-bottom:0;background:#e8e8e8;border-bottom:1px solid #d4d4d4;padding:0 8px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
-.tab-bar::-webkit-scrollbar{height:3px}
-.tab-bar::-webkit-scrollbar-track{background:transparent}
-.tab-bar::-webkit-scrollbar-thumb{background:#ccc;border-radius:2px}
-.tab-btn{padding:8px 10px;font-size:12px;font-weight:500;border:1px solid transparent;border-bottom:none;border-radius:4px 4px 0 0;background:transparent;color:#767676;cursor:pointer;font-family:inherit;transition:all .15s;margin-bottom:-1px;margin-top:4px;position:relative;flex-shrink:0;white-space:nowrap}
+.tab-bar{margin-bottom:0;background:#e8e8e8;border-bottom:1px solid #d4d4d4;padding:0;overflow:hidden}
+.tab-scroll{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;white-space:nowrap;padding:0 8px;scrollbar-width:thin}
+.tab-scroll::-webkit-scrollbar{height:4px}
+.tab-scroll::-webkit-scrollbar-track{background:transparent}
+.tab-scroll::-webkit-scrollbar-thumb{background:#bbb;border-radius:2px}
+.tab-btn{padding:8px 12px;font-size:12px;font-weight:500;border:1px solid transparent;border-bottom:none;border-radius:4px 4px 0 0;background:transparent;color:#767676;cursor:pointer;font-family:inherit;transition:all .15s;margin-bottom:-1px;margin-top:4px;position:relative;white-space:nowrap;display:inline-block;vertical-align:bottom}
 .tab-btn:hover{color:#292929;background:#f5f5f5}
 .tab-btn.active{color:#cc0000;font-weight:600;background:#fff;border-color:#d4d4d4;border-bottom-color:#fff}
 .tab-badge{display:none;position:absolute;top:2px;right:4px;background:#cc0000;color:#fff;font-size:10px;font-weight:700;min-width:16px;height:16px;border-radius:8px;padding:0 4px;line-height:16px;text-align:center;pointer-events:none}
@@ -359,7 +360,10 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 /* Risk graph card */
 .risk-graph-card .risk-graph-container{width:100%;overflow:hidden;touch-action:pan-y}
 .risk-graph-card svg{display:block;width:100%;height:auto;user-select:none;-webkit-user-select:none;touch-action:none}
-.risk-graph-hint{font-size:12px;color:#9b9b9b;text-align:center;padding:6px 0 0 0;line-height:1.4}
+.risk-graph-hint{font-size:12px;color:#9b9b9b;text-align:center;padding:6px 0 0 0;line-height:1.4;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
+.rg-reset-btn{padding:2px 10px;font-size:11px;font-weight:600;border:1px solid #ccc;border-radius:4px;background:#f5f5f5;color:#767676;cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap}
+.rg-reset-btn:hover{background:#e8e8e8;border-color:#aaa;color:#292929}
+@media(max-width:600px){.rg-reset-btn{padding:4px 10px;font-size:12px;min-height:30px}}
 .ggrid{stroke:#e0e0e0;stroke-width:1}
 .ggrid-major{stroke:#ccc;stroke-width:1}
 .ggrid-minor{stroke:#f0f0f0;stroke-width:0.5}
@@ -406,9 +410,7 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
   .speed-btn,.pause-btn{padding:6px 10px;font-size:13px;min-height:36px}
   .quarter{font-size:11px;padding:2px 6px}
   .regime-badge{font-size:10px}
-  .tab-bar{padding:0 4px}
-  .tab-bar::-webkit-scrollbar{height:4px}
-  .tab-bar::-webkit-scrollbar-thumb{background:#bbb;border-radius:2px}
+  .tab-scroll{padding:0 4px}
   .tab-btn{padding:8px 6px;font-size:11px}
   .tab-panel{padding:8px}
   .card{padding:8px}

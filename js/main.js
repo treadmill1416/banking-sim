@@ -345,6 +345,20 @@ function onBuyAutoGraph() {
   updateAll();
 }
 
+/** Reset the pricing curve to defaults and pause the game. */
+function onResetCurve() {
+  const s = getState();
+  s.riskRateMap = [
+    { risk: 0, rate: 5.5 },
+    { risk: 10, rate: 7.0 },
+    { risk: 20, rate: 10.0 },
+    { risk: 35, rate: 20.0 },
+    { risk: 50, rate: 20.0 },
+  ];
+  if (!s.paused) togglePause();
+  updateAll();
+}
+
 /** Buy the next branch level. */
 function onBuyBranch() {
   const s = getState();
@@ -418,6 +432,7 @@ function bindEvents() {
     if (btn.dataset.action === 'buy-auto-graph') onBuyAutoGraph();
     if (btn.dataset.action === 'buy-branch') onBuyBranch();
   });
+  document.getElementById('resetCurveBtn').addEventListener('click', onResetCurve);
   document.getElementById('loanAppsList').addEventListener('input', function (e) {
     const slider = e.target.closest('.app-rate-slider');
     if (!slider) return;

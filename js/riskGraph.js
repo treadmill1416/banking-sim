@@ -217,14 +217,12 @@ function processPointerMove(mx, my) {
   const map = getMap();
   if (!map[dragIdx]) return;
 
-  if (!inPlot(mx, my)) {
-    draggedOut = true;
-    return;
-  }
-  draggedOut = false;
+  // Clamp coordinates to plot bounds so dragging works even if finger drifts outside
+  const clampedMx = clamp(mx, MARGIN.left, MARGIN.left + innerW);
+  const clampedMy = clamp(my, MARGIN.top, MARGIN.top + innerH);
 
-  const risk = clamp(snap(pxToX(mx), X_STEP), X_MIN, X_MAX);
-  const rawRate = snap(pxToY(my), X_STEP);
+  const risk = clamp(snap(pxToX(clampedMx), X_STEP), X_MIN, X_MAX);
+  const rawRate = snap(pxToY(clampedMy), X_STEP);
   const inReject = rawRate > REJECT_THRESHOLD;
   const rate = inReject ? null : clamp(rawRate, Y_MIN, REJECT_THRESHOLD);
 
@@ -240,11 +238,6 @@ function processPointerMove(mx, my) {
 
 function processPointerUp() {
   if (dragIdx < 0) return;
-  const map = getMap();
-  if (draggedOut && dragIdx > 0 && dragIdx < map.length - 1) {
-    const newMap = map.filter((_, i) => i !== dragIdx);
-    setMap(newMap);
-  }
   dragIdx = -1;
   draggedOut = false;
   updateAll();

@@ -71,10 +71,10 @@ export function initRiskGraph() {
   cacheDims();
   render();
   svg.addEventListener('mousedown', onPointerDown);
-  svg.addEventListener('touchstart', onTouchStart, { passive: false });
+  svg.addEventListener('touchstart', onTouchStart, { passive: true });
   svg.addEventListener('contextmenu', e => e.preventDefault());
   document.addEventListener('mousemove', onPointerMove);
-  document.addEventListener('touchmove', onTouchMove, { passive: false });
+  document.addEventListener('touchmove', onTouchMove, { passive: true });
   document.addEventListener('mouseup', onPointerUp);
   document.addEventListener('touchend', onTouchEnd);
   resizeObserver = new ResizeObserver(() => { cacheDims(); render(); });
@@ -272,7 +272,6 @@ function onTouchStart(e) {
   if (target && target.tagName === 'circle' && target.dataset && target.dataset.idx !== undefined) {
     dragIdx = parseInt(target.dataset.idx);
     draggedOut = false;
-    e.preventDefault();
     return;
   }
   // Check if touching a child of a circle (text label or other child)
@@ -281,7 +280,6 @@ function onTouchStart(e) {
     if (circle && circle.dataset && circle.dataset.idx !== undefined) {
       dragIdx = parseInt(circle.dataset.idx);
       draggedOut = false;
-      e.preventDefault();
       return;
     }
   }
@@ -299,7 +297,6 @@ function onTouchStart(e) {
 
 function onTouchMove(e) {
   if (e.touches.length === 0 || dragIdx < 0) return;
-  e.preventDefault();
   const { x, y } = getTouchCoords(e);
   processPointerMove(x, y);
 }

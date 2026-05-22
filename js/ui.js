@@ -73,6 +73,7 @@ export function updateUI() {
 const COMPLIANCE_CHECKS = [
   {
     label: 'Solvency',
+    tip: 'Equity (assets minus liabilities) must be at least $0 to stay solvent',
     desc: 'Equity ≥ $0',
     pass: (s) => equity(s) >= 0,
     val: (s) => equity(s),
@@ -80,6 +81,7 @@ const COMPLIANCE_CHECKS = [
   },
   {
     label: 'Capital Adequacy',
+    tip: 'Equity must be at least 8% of risk-weighted assets (Basel-style)',
     desc: 'Equity / RWA ≥ 8%',
     pass: (s) => { const r = computeRwa(s); return r > 0 ? equity(s) / r >= 0.08 : true; },
     val: (s) => { const r = computeRwa(s); return r > 0 ? (equity(s) / r) * 100 : 100; },
@@ -87,6 +89,7 @@ const COMPLIANCE_CHECKS = [
   },
   {
     label: 'Reserve Requirement',
+    tip: 'Cash held at the central bank must be at least 1% of customer deposits',
     desc: 'Cash / Deposits ≥ 1%',
     pass: (s) => reserveRatio(s) >= 1,
     val: (s) => reserveRatio(s),
@@ -94,20 +97,23 @@ const COMPLIANCE_CHECKS = [
   },
   {
     label: 'Liquidity',
+    tip: 'Cash held at the central bank must be at least 5% of deposits — a stricter internal threshold',
     desc: 'Cash / Deposits ≥ 5%',
     pass: (s) => reserveRatio(s) >= 5,
     val: (s) => reserveRatio(s),
     fmt: (v) => v.toFixed(2) + '%',
   },
   {
-    label: 'NPL Ratio',
+    label: 'Non-Performing Loan Ratio',
+    tip: 'Defaulted loans must not exceed 5% of the total loan portfolio',
     desc: 'Default rate ≤ 5%',
     pass: (s) => trailingNpl(s) <= 5,
     val: (s) => trailingNpl(s),
     fmt: (v) => v.toFixed(2) + '%',
   },
   {
-    label: 'Loan Officer Capacity',
+    label: 'Staffing Capacity',
+    tip: 'The number of active loans cannot exceed the collective capacity of your loan officers',
     desc: 'Active loans ≤ capacity',
     pass: (s) => countActiveLoans(s) <= activeLoanCapacity(s),
     val: (s) => countActiveLoans(s) + ' / ' + activeLoanCapacity(s),
@@ -125,6 +131,7 @@ function updateCompliance(s) {
     html += '<div class="comp-item' + (ok ? ' comp-pass' : ' comp-fail') + '">' +
       '<span class="comp-icon">' + (ok ? '✓' : '✗') + '</span>' +
       '<span class="comp-label">' + c.label + '</span>' +
+      '<span class="tip" data-tip="' + c.tip + '">?</span>' +
       '<span class="comp-desc">' + c.desc + '</span>' +
       '<span class="comp-val">' + c.fmt(c.val(s)) + '</span>' +
       '</div>';
@@ -233,15 +240,15 @@ export function updatePnlDisplay() {
     '<table class="pnl-table">' +
     '<thead><tr><th class="pnl-th-l">Item</th><th class="pnl-th-r">Amount</th><th class="pnl-th-r">Change</th></tr></thead>' +
     '<tbody>' +
-    pnlRow('Loan Interest', 'pnl-income', pnlSigned(cur.interestIncome), (cur.interestIncome || 0) - (prev.interestIncome || 0)) +
-    pnlRow('Reserve Interest', 'pnl-income', pnlSigned(cur.reserveInterestIncome), (cur.reserveInterestIncome || 0) - (prev.reserveInterestIncome || 0)) +
-    pnlRow('Deposit Interest', 'pnl-expense', pnlSigned(-(cur.interestExpense || 0)), neg(cur.interestExpense || 0) - neg(prev.interestExpense || 0)) +
-    pnlRow('CB Interest', 'pnl-expense', pnlSigned(-(cur.cbInterestExpense || 0)), neg(cur.cbInterestExpense || 0) - neg(prev.cbInterestExpense || 0)) +
-    pnlRow('Salaries', 'pnl-expense', pnlSigned(-(cur.salaryExpense || 0)), neg(cur.salaryExpense || 0) - neg(prev.salaryExpense || 0)) +
-    pnlRow('Insurance', 'pnl-expense', pnlSigned(-(cur.insuranceExpense || 0)), neg(cur.insuranceExpense || 0) - neg(prev.insuranceExpense || 0)) +
-    pnlRow('Defaults', 'pnl-expense', pnlSigned(-(cur.defaultLosses || 0)), neg(cur.defaultLosses || 0) - neg(prev.defaultLosses || 0)) +
+    pnlRow('Loan Interest <span class="tip" data-tip="Interest earned on the loan portfolio">?</span>', 'pnl-income', pnlSigned(cur.interestIncome), (cur.interestIncome || 0) - (prev.interestIncome || 0)) +
+    pnlRow('Interest on Cash <span class="tip" data-tip="Interest earned on cash reserves at the central bank deposit facility">?</span>', 'pnl-income', pnlSigned(cur.reserveInterestIncome), (cur.reserveInterestIncome || 0) - (prev.reserveInterestIncome || 0)) +
+    pnlRow('Deposit Interest <span class="tip" data-tip="Interest paid to depositors on their deposits">?</span>', 'pnl-expense', pnlSigned(-(cur.interestExpense || 0)), neg(cur.interestExpense || 0) - neg(prev.interestExpense || 0)) +
+    pnlRow('Central Bank Interest <span class="tip" data-tip="Interest paid on borrowings from the central bank">?</span>', 'pnl-expense', pnlSigned(-(cur.cbInterestExpense || 0)), neg(cur.cbInterestExpense || 0) - neg(prev.cbInterestExpense || 0)) +
+    pnlRow('Salaries <span class="tip" data-tip="Monthly salaries for loan officers and risk analysts">?</span>', 'pnl-expense', pnlSigned(-(cur.salaryExpense || 0)), neg(cur.salaryExpense || 0) - neg(prev.salaryExpense || 0)) +
+    pnlRow('Insurance <span class="tip" data-tip="Deposit insurance premium, charged monthly on covered deposits">?</span>', 'pnl-expense', pnlSigned(-(cur.insuranceExpense || 0)), neg(cur.insuranceExpense || 0) - neg(prev.insuranceExpense || 0)) +
+    pnlRow('Credit Losses <span class="tip" data-tip="Losses from loan defaults and write-offs">?</span>', 'pnl-expense', pnlSigned(-(cur.defaultLosses || 0)), neg(cur.defaultLosses || 0) - neg(prev.defaultLosses || 0)) +
     '<tr class="pnl-divider-row"><td colspan="3"></td></tr>' +
-    pnlRow('Net P&L', netCur >= 0 ? 'pnl-income pnl-total' : 'pnl-expense pnl-total', pnlSigned(netCur), netCur - netPrev) +
+    pnlRow('Net Income <span class="tip" data-tip="Total income minus total expenses for the current month">?</span>', netCur >= 0 ? 'pnl-income pnl-total' : 'pnl-expense pnl-total', pnlSigned(netCur), netCur - netPrev) +
     '</tbody></table>';
 }
 
@@ -621,10 +628,10 @@ export function updateLoanOfficers(s) {
   const officerCost = s.numWorkers * SALARY_PER_OFFICER;
   body.innerHTML =
     '<div class="hr-stats">' +
-      '<div class="hr-stat"><div class="hr-stat-label">Officers</div><div class="hr-stat-value">' + s.numWorkers + '</div></div>' +
+      '<div class="hr-stat"><div class="hr-stat-label">Loan Officers <span class="tip" data-tip="Each officer manages up to ' + LOANS_PER_OFFICER + ' active loans at a time">?</span></div><div class="hr-stat-value">' + s.numWorkers + '</div></div>' +
       '<div class="hr-stat"><div class="hr-stat-label">Active Loans</div><div class="hr-stat-value">' + active + '</div></div>' +
-      '<div class="hr-stat"><div class="hr-stat-label">Capacity</div><div class="hr-stat-value">' + active + ' / ' + cap + '</div></div>' +
-      '<div class="hr-stat"><div class="hr-stat-label">Salary</div><div class="hr-stat-value">' + fmtDollar(officerCost) + '/mo</div></div>' +
+      '<div class="hr-stat"><div class="hr-stat-label">Utilization</div><div class="hr-stat-value">' + active + ' / ' + cap + '</div></div>' +
+      '<div class="hr-stat"><div class="hr-stat-label">Payroll</div><div class="hr-stat-value">' + fmtDollar(officerCost) + '/mo</div></div>' +
     '</div>' +
     '<div class="hr-actions">' +
       '<button class="hr-btn hire" data-action="hire"' + (s.paused === false ? '' : '') + '>Hire +1</button>' +
@@ -663,7 +670,7 @@ export function updateResearchTab() {
         '<div class="hr-stat"><div class="hr-stat-label">Next Cost</div><div class="hr-stat-value">' + cost + ' RP</div></div>' +
       '</div>' +
       '<div class="hr-actions">' +
-        '<button class="hr-btn hire" data-action="buy-risk-estimate"' + (canBuy ? '' : ' disabled') + '>Buy Level ' + (riskLevel + 1) + '</button>' +
+        '<button class="hr-btn hire" data-action="buy-risk-estimate"' + (canBuy ? '' : ' disabled') + '>Upgrade to Level ' + (riskLevel + 1) + '</button>' +
       '</div>';
   }
 
@@ -682,31 +689,31 @@ export function updateResearchTab() {
         '<button class="hr-btn hire" data-action="buy-auto-graph"' + (canBuy ? '' : ' disabled') + '>Purchase</button>' +
       '</div>' +
       '<div class="hr-detail">' +
-        '<div class="hr-detail-row"><span>Auto-approves or rejects loan applications using the risk graph after 15 ticks, removing the need for manual decisions.</span></div>' +
+        '<div class="hr-detail-row"><span>Auto-approves or rejects loan applications using the Pricing Curve after 15 ticks, removing the need for manual decisions.</span></div>' +
       '</div>';
   }
 
   body.innerHTML =
     '<div class="research-points-bar">' +
-      '<span class="research-rp-label">Research Points</span>' +
+      '<span class="research-rp-label">Research Points <span class="tip" data-tip="Earned monthly by Risk Analysts. Spent on R&amp;D upgrades.">?</span></span>' +
       '<span class="research-rp-value">⭐ ' + rp + '</span>' +
     '</div>' +
 
-    '<div class="hr-section-title">Credit Analysts</div>' +
+    '<div class="hr-section-title">Risk Analysts <span class="tip" data-tip="Each analyst produces 1 research point per month. Salary: $800/mo.">?</span></div>' +
     '<div class="hr-stats">' +
-      '<div class="hr-stat"><div class="hr-stat-label">Analysts</div><div class="hr-stat-value">' + analysts + '</div></div>' +
+      '<div class="hr-stat"><div class="hr-stat-label">Count</div><div class="hr-stat-value">' + analysts + '</div></div>' +
       '<div class="hr-stat"><div class="hr-stat-label">Yield</div><div class="hr-stat-value">' + (analysts * RESEARCH_POINTS_PER_ANALYST) + ' / mo</div></div>' +
-      '<div class="hr-stat"><div class="hr-stat-label">Cost</div><div class="hr-stat-value">' + fmtDollar(analystCost) + '/mo</div></div>' +
+      '<div class="hr-stat"><div class="hr-stat-label">Payroll</div><div class="hr-stat-value">' + fmtDollar(analystCost) + '/mo</div></div>' +
     '</div>' +
     '<div class="hr-actions">' +
       '<button class="hr-btn hire" data-action="hire-analyst"' + (s.paused === false ? '' : '') + '>Hire +1</button>' +
       '<button class="hr-btn fire" data-action="fire-analyst"' + (analysts <= 0 ? ' disabled' : '') + '>Fire -1</button>' +
     '</div>' +
 
-    '<div class="hr-section-title" style="margin-top:16px">Risk Estimation</div>' +
+    '<div class="hr-section-title" style="margin-top:16px">Default Risk Estimation <span class="tip" data-tip="Reduces the relative error in displayed loan default probabilities. Less error = more accurate underwriting.">?</span></div>' +
     '<div class="hr-detail-row" style="margin-bottom:6px">Reduces the relative error in displayed default probabilities.</div>' +
     riskHtml +
 
-    '<div class="hr-section-title" style="margin-top:16px">Auto Loan Processing</div>' +
+    '<div class="hr-section-title" style="margin-top:16px">Automated Underwriting <span class="tip" data-tip="When purchased, loan applications are auto-approved or auto-rejected using the Pricing Curve after 15 ticks, removing the need for manual decisions.">?</span></div>' +
     autoHtml;
 }

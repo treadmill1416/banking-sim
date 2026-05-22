@@ -326,6 +326,14 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 .hr-warn{background:#fef2f2;color:#cc0000;border:1px solid #f5c6c6;border-radius:4px;padding:8px 10px;margin-bottom:8px;font-size:12px;font-weight:600;text-align:center}
 .hr-section-title{font-size:13px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:0.5px;margin:8px 0 6px 0;padding:0 2px}
 
+/* Tooltip help icon */
+.tip{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:#bbb;color:#fff;font-size:10px;font-weight:700;cursor:help;margin-left:4px;position:relative;top:-0.5px;vertical-align:middle;line-height:15px;transition:background .15s;flex-shrink:0}
+.tip:hover{background:#888}
+.tip::after{content:attr(data-tip);display:none;position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:#292929;color:#fff;padding:7px 12px;border-radius:5px;font-size:12px;font-weight:400;white-space:nowrap;z-index:200;box-shadow:0 2px 10px rgba(0,0,0,0.25);line-height:1.4;pointer-events:none;font-family:Helvetica,Arial,sans-serif;text-transform:none;letter-spacing:0}
+.tip:hover::after{display:block}
+.tip-left::after{left:auto;right:0;transform:none}
+.tip-right::after{left:0;right:auto;transform:none}
+
 /* Research tab */
 .research-points-bar{display:flex;justify-content:space-between;align-items:center;background:#1a1a2e;color:#fff;padding:12px 16px;border-radius:8px;margin-bottom:16px}
 .research-rp-label{font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px}

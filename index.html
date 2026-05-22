@@ -68,21 +68,21 @@
     </thead>
     <tbody>
       <tr>
-        <td class="bs-label">Reserves</td>
+        <td class="bs-label">Cash <span class="tip" data-tip="Cash held as reserves at the central bank">?</span></td>
         <td class="bs-num" id="bsReserves">—</td>
-        <td class="bs-label">Deposits</td>
+        <td class="bs-label">Deposits <span class="tip" data-tip="Customer deposits — the bank&#39;s main source of funding">?</span></td>
         <td class="bs-num" id="bsDeposits">—</td>
       </tr>
       <tr>
-        <td class="bs-label">Loans</td>
+        <td class="bs-label">Loans <span class="tip" data-tip="Total outstanding principal of all active loans">?</span></td>
         <td class="bs-num" id="bsLoans">—</td>
-        <td class="bs-label">CB Borrowing</td>
+        <td class="bs-label">Central Bank Loans <span class="tip" data-tip="Borrowings from the central bank&#39;s lending facilities">?</span></td>
         <td class="bs-num" id="bsCbBorrowing">—</td>
       </tr>
       <tr>
         <td></td>
         <td></td>
-        <td class="bs-label">Equity</td>
+        <td class="bs-label">Equity <span class="tip" data-tip="Total assets minus total liabilities — the bank&#39;s net worth">?</span></td>
         <td class="bs-num" id="bsEquity" style="color:#2d8a4e">—</td>
       </tr>
       <tr class="bs-total">
@@ -145,7 +145,7 @@
     <div id="loanOfficerBody" class="hr-body"></div>
   </div>
   <div class="card risk-graph-card">
-    <h2>Risk-Based Pricing</h2>
+    <h2>Pricing Curve <span class="tip" data-tip="Drag points to set the interest rate for each default-risk level. Points in the red zone are rejected.">?</span></h2>
     <div class="risk-graph-container">
       <svg id="riskGraph"></svg>
     </div>
@@ -154,7 +154,7 @@
 
   <div class="grid-2col">
   <div class="card accepted-loans">
-    <h2>Accepted Loans <span id="acceptedLoanCount" style="font-size:11px;font-weight:400;text-transform:none;color:#9b9b9b"></span></h2>
+    <h2>Loan Portfolio <span class="tip" data-tip="All loans on the bank&#39;s books, grouped by status">?</span> <span id="acceptedLoanCount" style="font-size:11px;font-weight:400;text-transform:none;color:#9b9b9b"></span></h2>
     <svg id="defaultRateChart" style="width:100%;height:80px;margin-bottom:6px"></svg>
     <div id="acceptedLoansBody"><div class="events-empty">Loading…</div></div>
     <div class="loan-scatter-section">
@@ -207,29 +207,29 @@
     <h2>Metrics &amp; Rates</h2>
     <div class="metrics-grid">
       <div class="metric">
-        <div class="metric-label">Reserve Ratio</div>
+        <div class="metric-label">Reserve Ratio <span class="tip" data-tip="Cash held as a percentage of deposits — the regulatory minimum is 1%">?</span></div>
         <div class="metric-value" id="metricReserveRatio">—</div>
       </div>
       <div class="metric">
-        <div class="metric-label">Equity</div>
+        <div class="metric-label">Equity <span class="tip" data-tip="Total assets minus total liabilities — the bank&#39;s net worth">?</span></div>
         <div class="metric-value" id="metricEquity">—</div>
       </div>
       <div class="metric">
-        <div class="metric-label">NIM</div>
+        <div class="metric-label">Net Interest Margin <span class="tip" data-tip="Annualized difference between interest income and interest expense, relative to total earning assets">?</span></div>
         <div class="metric-value" id="metricNim">—</div>
       </div>
       <div class="metric">
-        <div class="metric-label">NPL Ratio</div>
+        <div class="metric-label">Non-Performing Loan Ratio <span class="tip" data-tip="Defaulted loans as a percentage of total loans — the regulatory limit is 5%">?</span></div>
         <div class="metric-value" id="metricNpl">—</div>
       </div>
     </div>
     <div class="ecb-rates">
-      <span class="ecb-rate ecb-mlf" id="ecbMlf">MLF —%</span>
-      <span class="ecb-rate ecb-mro" id="ecbMro">MRO —%</span>
-      <span class="ecb-rate ecb-depo" id="ecbDepo">Depo —%</span>
+      <span class="ecb-rate ecb-mlf" id="ecbMlf">Lending Facility —% <span class="tip" data-tip="The rate at which banks can borrow overnight from the central bank (ceiling of the rate corridor)">?</span></span>
+      <span class="ecb-rate ecb-mro" id="ecbMro">Main Refi Rate —% <span class="tip" data-tip="The central bank&#39;s main refinancing rate (mid-point of the rate corridor)">?</span></span>
+      <span class="ecb-rate ecb-depo" id="ecbDepo">Deposit Facility —% <span class="tip" data-tip="The rate at which banks can deposit excess reserves at the central bank (floor of the rate corridor)">?</span></span>
     </div>
     <div class="cb-desk">
-      <h3>Central Bank Desk</h3>
+      <h3>Central Bank <span class="tip" data-tip="Borrow from or repay the central bank. The interest rate on borrowings is the Lending Facility rate.">?</span></h3>
       <div class="cb-row">
         <input type="number" id="cbAmount" value="100000" step="10000" min="0">
         <button class="cb-btn borrow" id="cbBorrowBtn">Borrow</button>
@@ -241,7 +241,7 @@
     <h2>Config</h2>
     <label class="cfg-row">
       <input type="checkbox" id="autoCbCheckbox" checked>
-      <span>Auto-borrow from central bank when reserves fall below requirement</span>
+      <span>Auto-borrow when cash is low <span class="tip" data-tip="When enabled, the bank will automatically borrow from the central bank to meet the 1% reserve requirement">?</span></span>
     </label>
   </div>
 </div><!-- /tabPolicies -->

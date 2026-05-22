@@ -52,9 +52,26 @@ export function updateUI() {
   const insEl = document.getElementById('insuranceDisplay');
   if (insEl) insEl.textContent = s.depositInsurancePct + '%';
 
-  document.getElementById('ecbMlf').textContent = 'MLF ' + s.ecbMlfRate.toFixed(2) + '%';
-  document.getElementById('ecbMro').textContent = 'MRO ' + s.ecbMroRate.toFixed(2) + '%';
-  document.getElementById('ecbDepo').textContent = 'Depo ' + s.ecbDepositRate.toFixed(2) + '%';
+  document.getElementById('ecbMlf').innerHTML = 'Lending Facility ' + s.ecbMlfRate.toFixed(2) + '% <span class="tip" data-tip="The rate at which banks can borrow overnight from the central bank (ceiling of the rate corridor)">?</span>';
+  document.getElementById('ecbMro').innerHTML = 'Main Refi Rate ' + s.ecbMroRate.toFixed(2) + '% <span class="tip" data-tip="The central bank&#39;s main refinancing rate (mid-point of the rate corridor)">?</span>';
+  document.getElementById('ecbDepo').innerHTML = 'Deposit Facility ' + s.ecbDepositRate.toFixed(2) + '% <span class="tip" data-tip="The rate at which banks can deposit excess reserves at the central bank (floor of the rate corridor)">?</span>';
+
+  // Top metrics bar
+  const tm = document.getElementById('topMetrics');
+  if (tm) {
+    const rrClass = rr >= 1 ? 'tm-pos' : 'tm-neg';
+    const eqClass = eq >= 0 ? 'tm-pos' : 'tm-neg';
+    const nimClass = nim >= 0 ? 'tm-pos' : 'tm-neg';
+    const nplClass = npl < 2 ? 'tm-pos' : npl < 5 ? 'tm-warn' : 'tm-neg';
+    tm.innerHTML =
+      '<div class="tm-item"><span class="tm-label">Cash</span><span class="tm-value ' + (rr >= 1 ? '' : 'tm-neg') + '">' + fmtDollar(cash) + '</span></div>' +
+      '<div class="tm-item"><span class="tm-label">Loans</span><span class="tm-value">' + fmtDollar(loans) + '</span></div>' +
+      '<div class="tm-item"><span class="tm-label">Deposits</span><span class="tm-value">' + fmtDollar(deposits) + '</span></div>' +
+      '<div class="tm-item"><span class="tm-label">Equity</span><span class="tm-value ' + eqClass + '">' + fmtDollar(eq) + '</span></div>' +
+      '<div class="tm-item"><span class="tm-label">Reserve Ratio</span><span class="tm-value ' + rrClass + '">' + fmtPct(rr) + '</span></div>' +
+      '<div class="tm-item"><span class="tm-label">NIM</span><span class="tm-value ' + nimClass + '">' + fmtPct(nim) + '</span></div>' +
+      '<div class="tm-item"><span class="tm-label">NPL Ratio</span><span class="tm-value ' + nplClass + '">' + fmtPct(npl) + '</span></div>';
+  }
 
   const cntContainer = document.getElementById('acceptedLoanCount');
   if (cntContainer) {

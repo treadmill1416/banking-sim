@@ -54,7 +54,7 @@ export const INITIAL = {
   tick: 0,
   speed: 10,
   paused: true,
-  reserves: 100000,
+  reserves: 500000,
   loans: 0,
   deposits: 0,
   cbBorrowing: 0,

@@ -72,7 +72,7 @@ export function initRiskGraph() {
   cacheDims();
   render();
   svg.addEventListener('mousedown', onPointerDown);
-  svg.addEventListener('touchstart', onTouchStart, { passive: true });
+  svg.addEventListener('touchstart', onTouchStart, { passive: false });
   svg.addEventListener('contextmenu', e => e.preventDefault());
   document.addEventListener('mousemove', onPointerMove);
   document.addEventListener('touchmove', onTouchMove, { passive: true });
@@ -270,19 +270,20 @@ function onTouchStart(e) {
   const t = e.touches[0];
   touchStartX = t.clientX;
   touchStartY = t.clientY;
-  const target = e.target;
-  // Check if touching a circle (the SVG circles are actual DOM nodes after innerHTML)
-  if (target && target.tagName === 'circle' && target.dataset && target.dataset.idx !== undefined) {
-    dragIdx = parseInt(target.dataset.idx);
-    draggedOut = false;
-    return;
-  }
-  // Check if touching a child of a circle (text label or other child)
-  if (target && target.closest) {
-    const circle = target.closest('circle');
-    if (circle && circle.dataset && circle.dataset.idx !== undefined) {
+  const rect = svg.getBoundingClientRect();
+  const mx = t.clientX - rect.left;
+  const my = t.clientY - rect.top;
+  // Proximity-based hit detection — find nearest circle within 20px
+  const circles = svg.querySelectorAll('circle');
+  for (const circle of circles) {
+    const cx = parseFloat(circle.getAttribute('cx'));
+    const cy = parseFloat(circle.getAttribute('cy'));
+    const dx = mx - cx;
+    const dy = my - cy;
+    if (dx * dx + dy * dy < 400) {
       dragIdx = parseInt(circle.dataset.idx);
       draggedOut = false;
+      e.preventDefault();
       return;
     }
   }

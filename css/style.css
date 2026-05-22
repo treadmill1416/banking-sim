@@ -393,3 +393,10 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 .go-score{text-align:center;margin:12px 0;padding:12px;background:#f8f8f8;border-radius:6px}
 .go-score-value{font-size:28px;font-weight:700;color:#cc0000}
 .go-score-label{font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:#9b9b9b;margin-top:2px}
+
+/* === Tutorial === */
+.tut-body{padding:4px 0 12px}
+.tut-section{margin-bottom:20px}
+.tut-section h3{font-size:15px;font-weight:700;color:#cc0000;margin-bottom:6px}
+.tut-section p{font-size:14px;line-height:1.6;color:#444}
+.tut-section kbd{display:inline-block;padding:2px 7px;font-size:12px;font-weight:600;background:#e8e8e8;border:1px solid #ccc;border-radius:4px;margin:0 2px;font-family:'SF Mono','Cascadia Code','Consolas',monospace}

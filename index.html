@@ -47,6 +47,7 @@
   <button class="tab-btn" data-tab="loans">Loans <span class="tab-badge" id="loansBadge"></span></button>
   <button class="tab-btn" data-tab="policies">Policies</button>
   <button class="tab-btn" data-tab="research">Research</button>
+  <button class="tab-btn" data-tab="tutorial">Tutorial</button>
 </div>
 
 <!-- ========== Dashboard Tab ========== -->
@@ -267,6 +268,61 @@
     <div id="researchBody" class="hr-body"></div>
   </div>
 </div><!-- /tabResearch -->
+
+<!-- ========== Tutorial Tab ========== -->
+<div class="tab-panel" id="tabTutorial">
+  <div class="card">
+    <h2>Tutorial</h2>
+    <div class="tut-body">
+
+      <div class="tut-section">
+        <h3>What Is Bank Runner?</h3>
+        <p>You run a commercial bank. Your goal is to grow deposits, issue profitable loans, manage risks, and survive — through economic booms, recessions, bank runs, and central bank policy changes.</p>
+      </div>
+
+      <div class="tut-section">
+        <h3>Your Bank</h3>
+        <p>The <strong>Dashboard</strong> shows your balance sheet: <strong>Cash</strong> (reserves at the central bank), <strong>Loans</strong> (outstanding principal), <strong>Deposits</strong> (customer funding), and <strong>Equity</strong> (net worth). If equity goes negative, you're insolvent — game over.</p>
+      </div>
+
+      <div class="tut-section">
+        <h3>Setting Rates</h3>
+        <p>On the <strong>Policies</strong> tab, set your <strong>Loan Rate</strong> (what borrowers pay) and <strong>Deposit Rate</strong> (what you pay savers). A higher loan rate means more income per loan but fewer borrowers. A higher deposit rate attracts more deposits but costs you more. Find the sweet spot.</p>
+      </div>
+
+      <div class="tut-section">
+        <h3>Approving Loans</h3>
+        <p>The <strong>Loans</strong> tab lists pending applications. Each shows a <strong>default probability</strong>. Use the slider to adjust the rate, pick a <strong>term</strong> (12/24/36 months), then click Approve or Reject. Approved loans immediately create a deposit in the borrower's account — this is how banks create money.</p>
+      </div>
+
+      <div class="tut-section">
+        <h3>Managing Risk</h3>
+        <p>Some loans will <strong>default</strong>, eating into your equity. The <strong>Pricing Curve</strong> on the Dashboard helps set rate based on risk. Keep an eye on your <strong>Reserve Ratio</strong> (cash / deposits) — if it falls below 1%, the central bank will step in. Negative equity accelerates deposit outflows and can trigger a <strong>bank run</strong>.</p>
+      </div>
+
+      <div class="tut-section">
+        <h3>External Forces</h3>
+        <p>The <strong>ECB</strong> adjusts three policy rates (Deposit Facility, Main Refi Rate, Lending Facility). The economy cycles through <strong>Boom → Normal → Recession</strong> regimes, affecting loan demand, default rates, and deposit flows. Watch the regime badge in the header.</p>
+      </div>
+
+      <div class="tut-section">
+        <h3>Growing Your Bank</h3>
+        <p>Hire <strong>Loan Officers</strong> (Policies tab) to handle more loans. Hire <strong>Risk Analysts</strong> (Research tab) to earn research points, then spend those points on <strong>Default Risk Estimation</strong> (more accurate risk data), <strong>Automated Underwriting</strong> (auto-approve/reject), <strong>Marketing</strong> (boost loan demand and deposits), and <strong>Branch Expansion</strong> (more loan capacity and demand).</p>
+      </div>
+
+      <div class="tut-section">
+        <h3>Keyboard Shortcuts</h3>
+        <p><kbd>Space</kbd> = pause  |  <kbd>1</kbd> <kbd>3</kbd> <kbd>5</kbd> <kbd>0</kbd> = speed  |  <kbd>A</kbd> = approve first loan  |  <kbd>R</kbd> = reject first loan</p>
+      </div>
+
+      <div class="tut-section">
+        <h3>How Banks Create Money</h3>
+        <p>When a bank approves a loan, it does not hand over existing cash. Instead, it <strong>credits the borrower's deposit account</strong> with a new deposit — new money that did not exist before. This is <strong>credit creation</strong>: loans create deposits, not the other way around. The reserve requirement (1% of deposits) is a post-facto constraint, not a funding limit. In this simulation, every approved loan increases the deposit balance on your balance sheet immediately, illustrating how the banking system creates the majority of the broad money supply.</p>
+      </div>
+
+    </div>
+  </div>
+</div><!-- /tabTutorial -->
 
 </div><!-- /.app -->
 

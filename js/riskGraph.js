@@ -14,6 +14,7 @@ let dimsCached = false;
 let dragIdx = -1;
 let draggedOut = false;
 let resizeObserver = null;
+let touchStartX = 0, touchStartY = 0;
 
 /** Convert risk% to pixel X using a piecewise scale: 0..COMPRESS_POINT gets COMPRESS_PORTION of the width, the rest gets the remainder. */
 function xToPx(risk) {
@@ -266,7 +267,9 @@ function onPointerUp(e) {
 
 function onTouchStart(e) {
   if (e.touches.length === 0) return;
-  const { x, y } = getTouchCoords(e);
+  const t = e.touches[0];
+  touchStartX = t.clientX;
+  touchStartY = t.clientY;
   const target = e.target;
   // Check if touching a circle (the SVG circles are actual DOM nodes after innerHTML)
   if (target && target.tagName === 'circle' && target.dataset && target.dataset.idx !== undefined) {
@@ -283,16 +286,6 @@ function onTouchStart(e) {
       return;
     }
   }
-  // Add new point on empty space
-  const map = getMap();
-  if (map.length >= 20) return;
-  const risk = clamp(snap(pxToX(x), X_STEP), X_MIN, X_MAX);
-  const rawRate = snap(pxToY(y), X_STEP);
-  const rate = rawRate <= REJECT_THRESHOLD ? clamp(rawRate, Y_MIN, REJECT_THRESHOLD) : null;
-  if (map.some(p => Math.abs(p.risk - risk) < 0.01)) return;
-  const newMap = [...map, { risk, rate }].sort((a, b) => a.risk - b.risk);
-  setMap(newMap);
-  render();
 }
 
 function onTouchMove(e) {
@@ -302,5 +295,25 @@ function onTouchMove(e) {
 }
 
 function onTouchEnd(e) {
+  const wasDragging = dragIdx >= 0;
   processPointerUp();
+  if (wasDragging) return;
+  // Check if it was a tap (no significant movement) — add point
+  const changed = e.changedTouches[0];
+  if (!changed) return;
+  const dx = changed.clientX - touchStartX;
+  const dy = changed.clientY - touchStartY;
+  if (Math.abs(dx) > 10 || Math.abs(dy) > 10) return;
+  const rect = svg.getBoundingClientRect();
+  const x = changed.clientX - rect.left;
+  const y = changed.clientY - rect.top;
+  const map = getMap();
+  if (map.length >= 20) return;
+  const risk = clamp(snap(pxToX(x), X_STEP), X_MIN, X_MAX);
+  const rawRate = snap(pxToY(y), X_STEP);
+  const rate = rawRate <= REJECT_THRESHOLD ? clamp(rawRate, Y_MIN, REJECT_THRESHOLD) : null;
+  if (map.some(p => Math.abs(p.risk - risk) < 0.01)) return;
+  const newMap = [...map, { risk, rate }].sort((a, b) => a.risk - b.risk);
+  setMap(newMap);
+  render();
 }

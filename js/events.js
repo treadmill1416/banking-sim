@@ -1,6 +1,6 @@
-import { REGIME_ECB_BIAS, REGIME_DEFAULT_RISK, REGIME_DEPOSIT_MOD, REGIME_TRANSITIONS, REGIME_NAMES, ECB_RATE_NAMES, CB_SPREAD, RATE_MIN, RATE_MAX, PROB, TICKS_PER_MONTH, APPLICATIONS_PER_OFFICER, REGIME_LOAN_DEMAND } from './constants.js';
+import { REGIME_ECB_BIAS, REGIME_DEFAULT_RISK, REGIME_DEPOSIT_MOD, REGIME_TRANSITIONS, REGIME_NAMES, ECB_RATE_NAMES, CB_SPREAD, RATE_MIN, RATE_MAX, PROB, TICKS_PER_MONTH, APPLICATIONS_PER_OFFICER, REGIME_LOAN_DEMAND, RESEARCH_BASE_RELATIVE_ERROR, RESEARCH_ERROR_DECAY, NEGATIVE_EQUITY_DEPO_MULTIPLIER } from './constants.js';
 import { addEvent } from './state.js';
-import { getRateForRisk, totalAssets } from './mechanics.js';
+import { getRateForRisk, totalAssets, equity } from './mechanics.js';
 import { postJournal, getBalance } from './ledger.js';
 import { fmtDollar } from './utils.js';
 
@@ -8,6 +8,7 @@ import { fmtDollar } from './utils.js';
 
 /** Random deposit inflow/outflow. Amount depends on rate competitiveness vs MRO and current regime modifier.
  *  Bank runs force outflows and block inflows during the panic period.
+ *  Negative equity amplifies outflows (depositor confidence drain).
  *  @param {object} s */
 export function tryDepositFlow(s) {
   if (Math.random() >= PROB.depositFlow) return;
@@ -42,7 +43,9 @@ export function tryDepositFlow(s) {
   const regimeMod = REGIME_DEPOSIT_MOD[s.regime];
   const amount = (base + flowModifier) * regimeMod * insuranceBoost;
   if (amount > 0) {
-    const inflow = amount * (0.2 + Math.random() * 0.3);
+    // Negative equity reduces inflows (depositor caution)
+    const equityMod = equity(s) < 0 ? 0.3 : 1.0;
+    const inflow = amount * (0.2 + Math.random() * 0.3) * equityMod;
     if (inflow > 1000) {
       postJournal(s, [
         { account: 'cash', debit: inflow },
@@ -52,7 +55,9 @@ export function tryDepositFlow(s) {
     }
   } else {
     const outflow = -amount * (0.5 + Math.random() * 0.5);
-    const actual = Math.min(outflow, deposits * 0.05);
+    const equityMult = equity(s) < 0 ? NEGATIVE_EQUITY_DEPO_MULTIPLIER : 1.0;
+    const cap = deposits * 0.05 * equityMult;
+    const actual = Math.min(outflow, cap);
     if (actual > 1000) {
       postJournal(s, [
         { account: 'deposits', debit: actual },
@@ -65,6 +70,7 @@ export function tryDepositFlow(s) {
 
 /** Generate a loan request using a Pareto power-law distribution (α=2). Most requests cluster around `loanDemandPeakPct` of total assets; a heavy tail produces occasional very large requests.
  *  Monthly application volume is proportional to loan officers and scaled by regime demand.
+ *  The displayed default probability has relative noise that shrinks as research points accumulate.
  *  Auto-approves if default probability is below the auto-accept threshold.
  *  @param {object} s */
 export function tryLoanRequest(s) {
@@ -80,12 +86,20 @@ export function tryLoanRequest(s) {
   const maxLoan = ta * 0.9;
   const amount = Math.min(raw, maxLoan);
   const riskMult = REGIME_DEFAULT_RISK[s.regime];
-  const defaultProb = Math.min((1 + Math.random() * 35) * riskMult, 50);
-  const suggestedRate = getRateForRisk(s, defaultProb);
+  const trueDefaultProb = Math.min((1 + Math.random() * 35) * riskMult, 50);
+
+  // Apply research-based relative error to the displayed probability
+  const relErrorMargin = RESEARCH_BASE_RELATIVE_ERROR / (1 + (s.researchPoints || 0) * RESEARCH_ERROR_DECAY);
+  const relError = (Math.random() - 0.5) * 2 * relErrorMargin;
+  const displayedRisk = Math.max(0, Math.min(50, trueDefaultProb * (1 + relError)));
+
+  // The risk-based pricing graph uses the displayed risk for approval/rejection
+  const suggestedRate = getRateForRisk(s, displayedRisk);
   const id = 'lr-' + s.nextEventId;
   addEvent(s, 'loan_request', 'Loan request: ' + fmtDollar(amount), 'event-info', {
     loanAmount: amount,
-    defaultProb,
+    defaultProb: displayedRisk,
+    trueDefaultProb: trueDefaultProb,
     loanRequestId: id,
     proposedRate: s.loanRate,
     suggestedRate,

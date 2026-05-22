@@ -29,6 +29,25 @@ export const SALARY_PER_OFFICER = 1000;
 export const APPLICATIONS_PER_OFFICER = 4;
 export const INSURANCE_ANNUAL_PREMIUM = 0.005;
 
+// Risk-weighted asset weights by default risk band (Basel standardized approach)
+export const RISK_WEIGHTS = [
+  { maxProb: 2, weight: 0.35 },
+  { maxProb: 10, weight: 0.75 },
+  { maxProb: 25, weight: 1.0 },
+  { maxProb: 50, weight: 1.5 },
+];
+
+// Solvency / negative equity
+export const TICKS_NEGATIVE_EQUITY_LIMIT = 30;
+export const NEGATIVE_EQUITY_DEPO_MULTIPLIER = 3;
+export const NEGATIVE_EQUITY_CB_SPREAD_PREMIUM = 1.0;
+
+// Research / credit analysis
+export const RESEARCH_BASE_RELATIVE_ERROR = 0.5;
+export const RESEARCH_ERROR_DECAY = 0.1;
+export const RESEARCH_POINTS_PER_ANALYST = 1;
+export const ANALYST_SALARY = 800;
+
 export const INITIAL = {
   tick: 0,
   speed: 10,
@@ -69,6 +88,9 @@ export const INITIAL = {
   loanRequestsPerMonth: 20,
   loanDemandPeakPct: 3,
   numWorkers: 1,
+  ticksNegativeEquity: 0,
+  creditAnalysts: 0,
+  researchPoints: 0,
   ledgerJournal: [], ledgerBalances: {}, ledgerNextId: 1,   _dailyInt: { depoInt: 0, resInt: 0, cbInt: 0 }, ledgerMonthStart: null, ledgerLastMonth: null,
   penaltyPoints: 0,
   loanRecords: [],

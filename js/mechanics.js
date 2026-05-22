@@ -1,4 +1,4 @@
-import { TICKS_PER_YEAR, TICKS_PER_MONTH, RESERVE_RATIO_TARGET, NPL_WINDOW, DEFAULT_WINDOW, REGIME_MULTIPLIERS, DEFAULT_ANNUAL_RATE, PROB, LOAN_EXPIRY_TICKS, LOAN_DEFAULT_DURATION, DEPO_STABILITY_PROB, DEPO_STABILITY_RATE, LOANS_PER_OFFICER, SALARY_PER_OFFICER, INSURANCE_ANNUAL_PREMIUM } from './constants.js';
+import { TICKS_PER_YEAR, TICKS_PER_MONTH, RESERVE_RATIO_TARGET, NPL_WINDOW, DEFAULT_WINDOW, REGIME_MULTIPLIERS, DEFAULT_ANNUAL_RATE, PROB, LOAN_EXPIRY_TICKS, LOAN_DEFAULT_DURATION, DEPO_STABILITY_PROB, DEPO_STABILITY_RATE, LOANS_PER_OFFICER, SALARY_PER_OFFICER, INSURANCE_ANNUAL_PREMIUM, RISK_WEIGHTS, TICKS_NEGATIVE_EQUITY_LIMIT, NEGATIVE_EQUITY_CB_SPREAD_PREMIUM, NEGATIVE_EQUITY_DEPO_MULTIPLIER, RESEARCH_POINTS_PER_ANALYST, ANALYST_SALARY } from './constants.js';
 import { addEvent } from './state.js';
 import { fmtDollar } from './utils.js';
 import { postJournal, getBalance, getEquity, getNetIncome } from './ledger.js';
@@ -106,10 +106,11 @@ export function tryDepositStability(s) {
   const spread = s.depositRate - s.ecbMroRate;
   if (spread >= effectiveThreshold) return;
   const severity = Math.abs(spread - effectiveThreshold);
-  const prob = Math.min(0.1, DEPO_STABILITY_PROB * severity * REGIME_MULTIPLIERS[s.regime]);
+  const equityMult = getEquity(s) < 0 ? NEGATIVE_EQUITY_DEPO_MULTIPLIER : 1.0;
+  const prob = Math.min(0.1, DEPO_STABILITY_PROB * severity * REGIME_MULTIPLIERS[s.regime] * equityMult);
   if (Math.random() >= prob) return;
   const deposits = getBalance(s, 'deposits');
-  const pct = Math.min(0.01, DEPO_STABILITY_RATE * severity * REGIME_MULTIPLIERS[s.regime]);
+  const pct = Math.min(0.01, DEPO_STABILITY_RATE * severity * REGIME_MULTIPLIERS[s.regime] * equityMult);
   const outflow = deposits * pct * (0.5 + Math.random());
   if (outflow < 1000) return;
   const actual = Math.min(outflow, deposits);
@@ -149,17 +150,19 @@ export function countActiveLoans(s) {
   return count;
 }
 
-/** Process monthly salary payments for all loan officers and deposit insurance premium. Fires on month boundaries.
+/** Process monthly salary payments for loan officers and credit analysts, plus deposit insurance premium. Fires on month boundaries.
  *  @param {object} s */
 export function processSalaries(s) {
   if (s.tick % TICKS_PER_MONTH !== 0) return;
-  const totalSalary = s.numWorkers * SALARY_PER_OFFICER;
+  const officerCost = s.numWorkers * SALARY_PER_OFFICER;
+  const analystCost = (s.creditAnalysts || 0) * ANALYST_SALARY;
+  const totalSalary = officerCost + analystCost;
   if (totalSalary > 0) {
     postJournal(s, [
       { account: 'salaryExpense', debit: totalSalary },
       { account: 'cash', credit: totalSalary },
-    ], 'Monthly salaries - ' + s.numWorkers + ' loan officers');
-    addEvent(s, 'hr', 'Paid salaries: ' + fmtDollar(totalSalary) + ' for ' + s.numWorkers + ' loan officer(s)', 'event-expense');
+    ], 'Monthly salaries - ' + s.numWorkers + ' loan officers, ' + (s.creditAnalysts || 0) + ' analysts');
+    addEvent(s, 'hr', 'Paid salaries: ' + fmtDollar(totalSalary) + ' (' + s.numWorkers + ' officer(s), ' + (s.creditAnalysts || 0) + ' analyst(s))', 'event-expense');
   }
   if (s.depositInsurancePct > 0) {
     const deposits = getBalance(s, 'deposits');
@@ -175,11 +178,18 @@ export function processSalaries(s) {
 }
 
 /** Process a loan approval: create loan record, post journal entries (credit creation — deposits created ex nihilo), collect first payment, update weighted average rate, and check reserves.
+ *  Blocks approval if bank is insolvent (negative equity).
  *  @param {object} s
  *  @param {object} entry - Event log entry for this loan request
  *  @param {number} rate - Approved interest rate */
 export function processLoanApproval(s, entry, rate) {
   entry.approved = true;
+  if (getEquity(s) < 0) {
+    entry.msg += ' — BLOCKED: BANK INSOLVENT';
+    entry.cls = 'event-expense';
+    addEvent(s, 'loan', 'Cannot approve loan — bank is insolvent (equity < $0). Resolve the solvency issue first.', 'event-expense');
+    return;
+  }
   if (customerRefuses(s, rate, entry)) {
     entry.msg += ' — CUSTOMER REFUSED';
     entry.cls = 'event-expense';
@@ -201,6 +211,7 @@ export function processLoanApproval(s, entry, rate) {
     monthlyPrincipal: entry.loanAmount / months,
     remainingBalance: entry.loanAmount,
     defaultProb: entry.defaultProb || 2,
+    trueDefaultProb: entry.trueDefaultProb != null ? entry.trueDefaultProb : (entry.defaultProb || 2),
     status: 'active',
     createdAt: s.tick,
     repaidAtTick: null,
@@ -278,12 +289,13 @@ export function processLoanPayments(s) {
   if (changed) recomputeWeightedLoanRate(s);
 }
 
-/** Per-tick default probability check for each active loan. Annual prob = defaultProb × regime multiplier, converted to per-tick.
+/** Per-tick default probability check for each active loan. Uses trueDefaultProb (not the noisy displayed value) × regime multiplier.
  *  @param {object} s */
 export function processDefaults(s) {
   for (const lr of s.loanRecords) {
     if (lr.status !== 'active') continue;
-    const annualProb = (lr.defaultProb / 100) * REGIME_MULTIPLIERS[s.regime];
+    const trueRisk = (lr.trueDefaultProb != null ? lr.trueDefaultProb : lr.defaultProb) / 100;
+    const annualProb = trueRisk * REGIME_MULTIPLIERS[s.regime];
     const tickProb = annualProb / TICKS_PER_YEAR;
     if (tickProb > 0 && Math.random() < tickProb) {
       const bal = lr.remainingBalance || lr.amount;
@@ -425,8 +437,55 @@ export function expireOldLoans(s) {
   }
 }
 
-/** Severity weights per regulation. */
-const PENALTY_SEVERITY = { solvency: 10, capitalAdequacy: 7, reserveRequirement: 6, liquidity: 5, nplRatio: 4, loanCapacity: 2 };
+/** Compute risk-weighted assets. Cash has 0% weight. Each active loan is weighted by its default risk band.
+ *  @param {object} s
+ *  @returns {number} */
+export function computeRwa(s) {
+  let rwa = 0;
+  for (const lr of s.loanRecords) {
+    if (lr.status !== 'active') continue;
+    const dp = lr.trueDefaultProb != null ? lr.trueDefaultProb : (lr.defaultProb || 0);
+    let weight = 1.0;
+    for (const band of RISK_WEIGHTS) {
+      if (dp <= band.maxProb) { weight = band.weight; break; }
+    }
+    rwa += (lr.remainingBalance || lr.amount) * weight;
+  }
+  return rwa;
+}
+
+/** Real-time solvency check. Called every tick. If equity < 0, increments a counter.
+ *  Returns the current insolvent-tick count (>= TICKS_NEGATIVE_EQUITY_LIMIT means game over).
+ *  @param {object} s
+ *  @returns {number} - negative-equity tick count */
+export function checkSolvency(s) {
+  const eq = getEquity(s);
+  if (eq < 0) {
+    s.ticksNegativeEquity = (s.ticksNegativeEquity || 0) + 1;
+    if (s.ticksNegativeEquity === 1) {
+      addEvent(s, 'regulatory', '⚠ SOLVENCY WARNING: Equity is negative! Lending frozen. Resolve within ' + TICKS_NEGATIVE_EQUITY_LIMIT + ' ticks or regulators will seize the bank.', 'event-warn');
+    }
+  } else {
+    if (s.ticksNegativeEquity > 0) {
+      addEvent(s, 'regulatory', 'Equity restored — solvency warning lifted.', 'event-income');
+    }
+    s.ticksNegativeEquity = 0;
+  }
+  return s.ticksNegativeEquity || 0;
+}
+
+/** Accumulate research points from credit analysts. Called on month boundaries.
+ *  @param {object} s */
+export function processResearch(s) {
+  if (s.tick % TICKS_PER_MONTH !== 0) return;
+  const gained = (s.creditAnalysts || 0) * RESEARCH_POINTS_PER_ANALYST;
+  if (gained > 0) {
+    s.researchPoints = (s.researchPoints || 0) + gained;
+  }
+}
+
+/** Severity weights per regulation (solvency removed — handled by real-time checkSolvency). */
+const PENALTY_SEVERITY = { capitalAdequacy: 7, reserveRequirement: 6, liquidity: 5, nplRatio: 4, loanCapacity: 2 };
 const PENALTY_DECAY_PER_MONTH = 5;
 
 /** Compute penalty factor (0–1) for each regulation based on violation severity.
@@ -437,16 +496,14 @@ export function updatePenalty(s) {
 
   const RR = reserveRatio(s);
   const EQ = equity(s);
-  const TA = totalAssets(s);
-  const loans = getBalance(s, 'loansReceivable');
-  const capAdj = loans > 0 ? EQ / loans : 1;
+  const rwa = computeRwa(s);
+  const capAdj = rwa > 0 ? EQ / rwa : 1;
   const NPL = trailingNpl(s);
   const active = countActiveLoans(s);
   const capacity = activeLoanCapacity(s);
 
   let monthly = 0;
 
-  if (EQ < 0) monthly += PENALTY_SEVERITY.solvency * Math.min(1, Math.abs(EQ) / Math.max(TA, 1));
   if (capAdj < 0.08) monthly += PENALTY_SEVERITY.capitalAdequacy * Math.min(1, (0.08 - capAdj) / 0.08);
   if (RR < 1) monthly += PENALTY_SEVERITY.reserveRequirement * Math.min(1, (1 - RR) / 1);
   if (RR < 5) monthly += PENALTY_SEVERITY.liquidity * Math.min(1, (5 - RR) / 5);

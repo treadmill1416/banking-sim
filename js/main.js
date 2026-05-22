@@ -1,5 +1,5 @@
 import { getState, setState, createInitialState, load, save, reset as resetState } from './state.js';
-import { accrueInterest, processDefaults, checkReserves, expireOldLoans, processAutoDecisions, reserveRatio, computeNim, equity, tryDepositStability, processLoanPayments, computeDefaultRate, processSalaries, activeLoanCapacity, countActiveLoans, updatePenalty } from './mechanics.js';
+import { accrueInterest, processDefaults, checkReserves, expireOldLoans, processAutoDecisions, reserveRatio, computeNim, computeRwa, equity, tryDepositStability, processLoanPayments, computeDefaultRate, processSalaries, activeLoanCapacity, countActiveLoans, updatePenalty, checkSolvency, processResearch } from './mechanics.js';
 import { tryDepositFlow, tryLoanRequest, tryEcbChange, tryRegimeChange } from './events.js';
 import { approveLoan, rejectLoan, cbBorrow, cbRepay } from './actions.js';
 import { fmtDollar, gameDateStr } from './utils.js';
@@ -29,6 +29,7 @@ function tick() {
   processDefaults(s);
   updateLedgerPnl(s);
   processSalaries(s);
+  processResearch(s);
   processLoanPayments(s);
   tryDepositFlow(s);
   tryDepositStability(s);
@@ -39,8 +40,10 @@ function tick() {
   expireOldLoans(s);
   checkReserves(s);
   updatePenalty(s);
+  checkSolvency(s);
 
   if (s.penaltyPoints >= 100) { triggerGameOver(s); return; }
+  if (s.ticksNegativeEquity >= 30) { triggerGameOverInsolvent(s); return; }
 
   if (s.tick % 2 === 0) postDailyInterest(s);
 
@@ -152,6 +155,21 @@ function triggerGameOver(s) {
   document.getElementById('gameoverOverlay').style.display = 'flex';
 }
 
+/** Pause the game and show the Game Over overlay for insolvency (negative equity too long). */
+function triggerGameOverInsolvent(s) {
+  if (intervalId) { clearInterval(intervalId); intervalId = null; }
+  s.paused = true;
+  const body = document.getElementById('gameoverBody');
+  body.innerHTML =
+    '<div class="gameover-reason">⚠ BANK DECLARED INSOLVENT</div>' +
+    '<div class="gameover-sub">Equity was negative for ' + s.ticksNegativeEquity + ' consecutive ticks</div>' +
+    '<div class="gameover-summary">' +
+      '<div class="go-row"><span class="go-label">Game Duration</span><span class="go-val">' + gameDateStr(s.tick) + '</span></div>' +
+      '<div class="go-row"><span class="go-label">Total Ticks</span><span class="go-val">' + s.tick.toLocaleString() + '</span></div>' +
+    '</div>';
+  document.getElementById('gameoverOverlay').style.display = 'flex';
+}
+
 /** Reset game to initial state after user confirmation. Reinitializes ledger, loan records, and history. */
 export function resetGame() {
   if (!confirm('Reset game? All progress will be lost.')) return;
@@ -224,6 +242,21 @@ function onFireClick() {
   addEvent(s, 'hr', 'Fired a loan officer — now ' + s.numWorkers + ' total', 'event-expense');
   updateAll();
 }
+/** Hire a credit analyst. */
+function onHireAnalyst() {
+  const s = getState();
+  s.creditAnalysts = (s.creditAnalysts || 0) + 1;
+  addEvent(s, 'hr', 'Hired a credit analyst — now ' + s.creditAnalysts + ' total', 'event-info');
+  updateAll();
+}
+/** Fire a credit analyst. */
+function onFireAnalyst() {
+  const s = getState();
+  if ((s.creditAnalysts || 0) <= 0) return;
+  s.creditAnalysts--;
+  addEvent(s, 'hr', 'Fired a credit analyst — now ' + s.creditAnalysts + ' total', 'event-expense');
+  updateAll();
+}
 
 /** Refresh all UI displays and save state. Used after any player action (approve/reject/borrow/repay). */
 export function updateAll() {
@@ -252,6 +285,8 @@ function bindEvents() {
     if (!btn) return;
     if (btn.dataset.action === 'hire') onHireClick();
     if (btn.dataset.action === 'fire') onFireClick();
+    if (btn.dataset.action === 'hire-analyst') onHireAnalyst();
+    if (btn.dataset.action === 'fire-analyst') onFireAnalyst();
   });
   document.getElementById('loanAppsList').addEventListener('input', function (e) {
     const slider = e.target.closest('.app-rate-slider');

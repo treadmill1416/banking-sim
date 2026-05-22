@@ -3,7 +3,7 @@ import {
   requiredReserves, reserveRatio, totalAssets, computeNim,
   trailingNpl, accrueInterest, activeLoanCapacity, countActiveLoans,
   recomputeWeightedLoanRate, computeDefaultRate, getRateForRisk,
-  processAutoDecisions, updatePenalty,
+  processAutoDecisions, updatePenalty, computeRwa, checkSolvency, processResearch,
 } from './mechanics.js';
 import { initLedger, postJournal, getBalance } from './ledger.js';
 import { createInitialState } from './state.js';
@@ -270,9 +270,130 @@ describe('processAutoDecisions', () => {
   });
 });
 
+describe('computeRwa', () => {
+  it('returns 0 when no active loans', () => {
+    s.loanRecords = [];
+    expect(computeRwa(s)).toBe(0);
+  });
+
+  it('assigns correct risk weights by default prob band', () => {
+    s.loanRecords = [
+      { status: 'active', remainingBalance: 100000, defaultProb: 1, trueDefaultProb: 1 },
+      { status: 'active', remainingBalance: 100000, defaultProb: 5, trueDefaultProb: 5 },
+      { status: 'active', remainingBalance: 100000, defaultProb: 15, trueDefaultProb: 15 },
+      { status: 'active', remainingBalance: 100000, defaultProb: 30, trueDefaultProb: 30 },
+    ];
+    const rwa = computeRwa(s);
+    // 35% + 75% + 100% + 150% of 100000 each
+    expect(rwa).toBeCloseTo(100000 * 0.35 + 100000 * 0.75 + 100000 * 1.0 + 100000 * 1.5, 1);
+  });
+
+  it('uses trueDefaultProb when available, falls back to defaultProb', () => {
+    s.loanRecords = [
+      { status: 'active', remainingBalance: 100000, defaultProb: 5, trueDefaultProb: 1 },
+    ];
+    // trueDefaultProb=1 → 35% weight
+    expect(computeRwa(s)).toBeCloseTo(35000, 1);
+  });
+
+  it('skips non-active loans', () => {
+    s.loanRecords = [
+      { status: 'active', remainingBalance: 100000, defaultProb: 1 },
+      { status: 'repaid', remainingBalance: 100000, defaultProb: 30 },
+      { status: 'defaulted', remainingBalance: 100000, defaultProb: 30 },
+    ];
+    expect(computeRwa(s)).toBeCloseTo(35000, 1);
+  });
+});
+
+describe('checkSolvency', () => {
+  it('increments ticksNegativeEquity when equity is negative', () => {
+    postJournal(s, [
+      { account: 'cash', credit: 200000 },
+      { account: 'equity', debit: 200000 },
+    ], 'wreck');
+    checkSolvency(s);
+    expect(s.ticksNegativeEquity).toBe(1);
+  });
+
+  it('resets to 0 when equity is positive', () => {
+    s.ticksNegativeEquity = 5;
+    checkSolvency(s);
+    expect(s.ticksNegativeEquity).toBe(0);
+  });
+
+  it('does not increment when equity is zero', () => {
+    s.ticksNegativeEquity = 3;
+    postJournal(s, [
+      { account: 'cash', credit: 200000 },
+      { account: 'equity', debit: 200000 },
+    ], 'wreck');
+    postJournal(s, [
+      { account: 'cash', debit: 200000 },
+      { account: 'equity', credit: 200000 },
+    ], 'fix');
+    checkSolvency(s);
+    expect(s.ticksNegativeEquity).toBe(0);
+  });
+
+  it('returns the current tick count', () => {
+    postJournal(s, [
+      { account: 'cash', credit: 200000 },
+      { account: 'equity', debit: 200000 },
+    ], 'wreck');
+    const result = checkSolvency(s);
+    expect(result).toBe(1);
+  });
+});
+
+describe('processResearch', () => {
+  it('adds research points on month boundaries', () => {
+    s.creditAnalysts = 3;
+    s.tick = 60;
+    s.researchPoints = 0;
+    processResearch(s);
+    expect(s.researchPoints).toBe(3);
+  });
+
+  it('does nothing on non-month ticks', () => {
+    s.creditAnalysts = 3;
+    s.tick = 30;
+    s.researchPoints = 0;
+    processResearch(s);
+    expect(s.researchPoints).toBe(0);
+  });
+
+  it('handles zero analysts', () => {
+    s.creditAnalysts = 0;
+    s.tick = 60;
+    s.researchPoints = 5;
+    processResearch(s);
+    expect(s.researchPoints).toBe(5);
+  });
+
+  it('accumulates over multiple months', () => {
+    s.creditAnalysts = 2;
+    s.tick = 60;
+    s.researchPoints = 0;
+    processResearch(s);
+    s.tick = 120;
+    processResearch(s);
+    expect(s.researchPoints).toBe(4);
+  });
+});
+
 describe('updatePenalty', () => {
   beforeEach(() => {
     s.tick = 60;
+    // Add a loan record so RWA can compute
+    s.loanRecords = [{
+      status: 'active',
+      amount: 500000,
+      remainingBalance: 500000,
+      defaultProb: 2,
+      trueDefaultProb: 2,
+      rate: 5,
+    }];
     postJournal(s, [
       { account: 'cash', debit: 400000 },
       { account: 'deposits', credit: 600000 },
@@ -294,19 +415,11 @@ describe('updatePenalty', () => {
     expect(s.penaltyPoints).toBe(0);
   });
 
-  it('charges solvency penalty when equity is negative', () => {
+  it('charges capital adequacy penalty when equity/RWA < 8%', () => {
+    // Reduce equity to push equity/RWA below 8% (RWA = 500000*0.35 = 175000, 8% = 14000)
     postJournal(s, [
-      { account: 'cash', credit: 900000 },
-      { account: 'retainedEarnings', debit: 900000 },
-    ], 'wreck');
-    updatePenalty(s);
-    expect(s.penaltyPoints).toBeGreaterThan(0);
-  });
-
-  it('charges capital adequacy penalty when equity/loans < 8%', () => {
-    postJournal(s, [
-      { account: 'cash', credit: 370000 },
-      { account: 'retainedEarnings', debit: 370000 },
+      { account: 'cash', credit: 392000 },
+      { account: 'equity', debit: 392000 },
     ], 'low capital');
     s.tick = 120;
     updatePenalty(s);
@@ -316,7 +429,7 @@ describe('updatePenalty', () => {
   it('charges reserve requirement penalty when RR < 1%', () => {
     postJournal(s, [
       { account: 'cash', credit: 490000 },
-      { account: 'retainedEarnings', debit: 490000 },
+      { account: 'equity', debit: 490000 },
     ], 'low reserves');
     updatePenalty(s);
     expect(s.penaltyPoints).toBeGreaterThan(0);
@@ -352,28 +465,13 @@ describe('updatePenalty', () => {
     expect(s.penaltyPoints).toBe(0);
   });
 
-  it('compounds across multiple months', () => {
-    postJournal(s, [
-      { account: 'cash', credit: 900000 },
-      { account: 'retainedEarnings', debit: 900000 },
-    ], 'wreck');
-    s.tick = 60;
-    updatePenalty(s);
-    const afterFirst = s.penaltyPoints;
-
-    s.tick = 120;
-    updatePenalty(s);
-    expect(s.penaltyPoints).toBeGreaterThan(afterFirst);
-  });
-
   it('caps at 100', () => {
     s.penaltyPoints = 99;
-
+    // Push equity negative through capital adequacy violation
     postJournal(s, [
-      { account: 'cash', credit: 900000 },
-      { account: 'retainedEarnings', debit: 900000 },
+      { account: 'cash', credit: 400000 },
+      { account: 'equity', debit: 400000 },
     ], 'wreck');
-
     s.tick = 60;
     updatePenalty(s);
     expect(s.penaltyPoints).toBe(100);

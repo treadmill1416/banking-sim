@@ -4,19 +4,22 @@ import { updateAll } from './main.js';
 const X_MIN = 0, X_MAX = 50, X_STEP = 0.5;
 const Y_MIN = 0, Y_MAX = 25, Y_STEP = 0.25;
 const REJECT_THRESHOLD = 20;
-const COMPRESS_POINT = 20;       // risk% where compression begins
-const COMPRESS_PORTION = 0.7;    // fraction of innerW given to 0..COMPRESS_POINT
+const COMPRESS_POINT = 20;
+const COMPRESS_PORTION = 0.7;
 const MARGIN = { top: 16, right: 16, bottom: 28, left: 44 };
+const TOUCH_HIT_RADIUS = 32;
+const CIRCLE_RADIUS = 8;
 
 let svg = null;
+let dynGroup = null;
 let W = 0, H = 0, innerW = 0, innerH = 0;
 let dimsCached = false;
 let dragIdx = -1;
-let draggedOut = false;
 let resizeObserver = null;
 let touchStartX = 0, touchStartY = 0;
+let touchIdentifier = -1;
+let staticRendered = false;
 
-/** Convert risk% to pixel X using a piecewise scale: 0..COMPRESS_POINT gets COMPRESS_PORTION of the width, the rest gets the remainder. */
 function xToPx(risk) {
   const clamped = Math.max(X_MIN, Math.min(X_MAX, risk));
   const pivot = MARGIN.left + COMPRESS_PORTION * innerW;
@@ -28,7 +31,7 @@ function xToPx(risk) {
   const t = (clamped - COMPRESS_POINT) / (X_MAX - COMPRESS_POINT);
   return pivot + t * (tail - pivot);
 }
-/** Inverse of xToPx: pixel X → risk% */
+
 function pxToX(px) {
   const pivot = MARGIN.left + COMPRESS_PORTION * innerW;
   const tail = MARGIN.left + innerW;
@@ -39,22 +42,22 @@ function pxToX(px) {
   const t = (px - pivot) / (tail - pivot);
   return COMPRESS_POINT + t * (X_MAX - COMPRESS_POINT);
 }
+
 function yToPx(rate) {
   if (rate === null || rate === undefined) rate = REJECT_THRESHOLD + 2.5;
   return MARGIN.top + (Y_MAX - rate) / (Y_MAX - Y_MIN) * innerH;
 }
+
 function pxToY(py) {
   return Y_MAX - ((py - MARGIN.top) / innerH) * (Y_MAX - Y_MIN);
 }
+
 function snap(v, step) {
   return Math.round(v / step) * step;
 }
+
 function clamp(v, lo, hi) {
   return Math.max(lo, Math.min(hi, v));
-}
-function inPlot(px, py) {
-  return px >= MARGIN.left && px <= MARGIN.left + innerW &&
-         py >= MARGIN.top && py <= MARGIN.top + innerH;
 }
 
 function cacheDims() {
@@ -70,46 +73,41 @@ export function initRiskGraph() {
   svg = document.getElementById('riskGraph');
   if (!svg) return;
   cacheDims();
-  render();
+  fullRender();
+  staticRendered = true;
   svg.addEventListener('mousedown', onPointerDown);
   svg.addEventListener('touchstart', onTouchStart, { passive: false });
   svg.addEventListener('contextmenu', e => e.preventDefault());
   document.addEventListener('mousemove', onPointerMove);
-  document.addEventListener('touchmove', onTouchMove, { passive: true });
+  document.addEventListener('touchmove', onTouchMove, { passive: false });
   document.addEventListener('mouseup', onPointerUp);
   document.addEventListener('touchend', onTouchEnd);
-  resizeObserver = new ResizeObserver(() => { cacheDims(); render(); });
+  resizeObserver = new ResizeObserver(() => { cacheDims(); fullRender(); });
   resizeObserver.observe(svg.parentElement);
+  updateToggle();
 }
 
 export function updateRiskGraph() {
   if (!svg) svg = document.getElementById('riskGraph');
   if (!svg) return;
-  render();
+  if (!staticRendered) { fullRender(); staticRendered = true; return; }
+  renderPoints();
+  updateToggle();
 }
 
-function getMap() {
-  return getState().riskRateMap || [];
-}
-
-function setMap(map) {
-  getState().riskRateMap = map;
-}
-
-function render() {
-  if (!dimsCached) cacheDims();
-
+function fullRender() {
+  cacheDims();
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.innerHTML = buildStaticHTML() + '<g id="dyn-group"></g>';
+  dynGroup = svg.querySelector('#dyn-group');
+  renderPoints();
+}
 
-  const map = getMap();
+function buildStaticHTML() {
   let html = '';
-
-  // Reject zone
   const rejectPx = yToPx(REJECT_THRESHOLD);
   html += `<rect x="${MARGIN.left}" y="${MARGIN.top}" width="${innerW}" height="${rejectPx - MARGIN.top}" fill="rgba(200,0,0,0.08)" stroke="none"/>`;
   html += `<text x="${MARGIN.left + innerW / 2}" y="${(MARGIN.top + rejectPx) / 2 + 4}" text-anchor="middle" fill="#cc0000" font-size="13" font-weight="bold" opacity="0.35">REJECT</text>`;
-
-  // Y-axis ticks
   const Y_TICKS = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 25];
   for (const y of Y_TICKS) {
     const py = yToPx(y);
@@ -117,8 +115,6 @@ function render() {
     html += `<line x1="${MARGIN.left}" y1="${py}" x2="${MARGIN.left + innerW}" y2="${py}" class="${major ? 'ggrid-major' : 'ggrid'}"/>`;
     html += `<text x="${MARGIN.left - 4}" y="${py + 3.5}" text-anchor="end" class="glabel">${y}</text>`;
   }
-
-  // X-axis ticks — granular every 1% in 0..20, every 5% after
   const X_TICKS = [];
   for (let x = 0; x <= 20; x += 2) X_TICKS.push(x);
   for (let x = 25; x <= 50; x += 5) X_TICKS.push(x);
@@ -128,41 +124,97 @@ function render() {
     html += `<line x1="${px}" y1="${MARGIN.top}" x2="${px}" y2="${MARGIN.top + innerH}" class="${major ? 'ggrid-major' : 'ggrid'}"/>`;
     html += `<text x="${px}" y="${MARGIN.top + innerH + 16}" text-anchor="middle" class="glabel">${x}</text>`;
   }
-  // Extra faint gridlines every 1% in 0..20 for fine-grained reference
   for (let x = 1; x < 20; x++) {
     if (x % 2 === 0) continue;
     const px = xToPx(x);
     html += `<line x1="${px}" y1="${MARGIN.top}" x2="${px}" y2="${MARGIN.top + innerH}" class="ggrid-minor"/>`;
   }
-
-  // Axis titles
   html += `<text x="${MARGIN.left + innerW / 2}" y="${H - 2}" text-anchor="middle" class="glabel" font-size="11">Default Risk (%)</text>`;
   html += `<text x="12" y="${MARGIN.top + innerH / 2}" text-anchor="middle" class="glabel" font-size="11" transform="rotate(-90, 12, ${MARGIN.top + innerH / 2})">Rate (%)</text>`;
+  return html;
+}
 
-  // Line segments connecting points
+function renderPoints() {
+  if (!dynGroup) dynGroup = svg && svg.querySelector('#dyn-group');
+  if (!dynGroup) return;
+  dynGroup.innerHTML = buildPointsHTML();
+}
+
+function buildPointsHTML() {
+  const map = getMap();
+  let html = '';
   if (map.length > 1) {
     let path = '';
     for (let i = 0; i < map.length; i++) {
-      const px = xToPx(map[i].risk);
-      const py = yToPx(map[i].rate);
-      path += (i === 0 ? 'M' : 'L') + px.toFixed(1) + ',' + py.toFixed(1);
+      const px = xToPx(map[i].risk).toFixed(1);
+      const py = yToPx(map[i].rate).toFixed(1);
+      path += (i === 0 ? 'M' : 'L') + px + ',' + py;
     }
     const inRej = map.some(p => p.rate === null || p.rate > REJECT_THRESHOLD);
-    html += `<path d="${path}" fill="none" stroke="${inRej ? '#cc0000' : '#2563eb'}" stroke-width="2"/>`;
+    html += `<path id="conn-path" d="${path}" fill="none" stroke="${inRej ? '#cc0000' : '#2563eb'}" stroke-width="2"/>`;
   }
-
-  // Points
   for (let i = 0; i < map.length; i++) {
-    const px = xToPx(map[i].risk);
+    const px = xToPx(map[i].risk).toFixed(1);
     const inReject = map[i].rate === null || map[i].rate > REJECT_THRESHOLD;
-    const py = inReject ? yToPx(null) : yToPx(map[i].rate);
+    const py = inReject ? yToPx(null).toFixed(1) : yToPx(map[i].rate).toFixed(1);
     const fill = inReject ? '#cc0000' : '#2563eb';
-    html += `<circle cx="${px}" cy="${py}" r="6" fill="${fill}" stroke="#fff" stroke-width="2" data-idx="${i}" style="cursor:grab"/>`;
+    html += `<circle class="rg-drag-halo" data-halo-idx="${i}" cx="${px}" cy="${py}" r="14" fill="${fill}" fill-opacity="0" stroke="none"/>`;
+    html += `<circle cx="${px}" cy="${py}" r="${CIRCLE_RADIUS}" fill="${fill}" stroke="#fff" stroke-width="2" data-idx="${i}" style="cursor:grab"/>`;
     const label = map[i].rate !== null ? map[i].rate.toFixed(2) + '%' : 'REJ';
-    html += `<text x="${px}" y="${py - 10}" text-anchor="middle" class="plabel" fill="${fill}">${label}</text>`;
+    html += `<text x="${px}" y="${parseFloat(py) - 10}" text-anchor="middle" class="plabel" fill="${fill}" data-idx="${i}">${label}</text>`;
+  }
+  return html;
+}
+
+function updatePointDuringDrag(idx) {
+  const map = getMap();
+  if (!map[idx]) return;
+
+  const px = xToPx(map[idx].risk).toFixed(1);
+  const inReject = map[idx].rate === null || map[idx].rate > REJECT_THRESHOLD;
+  const py = inReject ? yToPx(null).toFixed(1) : yToPx(map[idx].rate).toFixed(1);
+  const fill = inReject ? '#cc0000' : '#2563eb';
+
+  const halo = svg.querySelector(`circle[data-halo-idx="${idx}"]`);
+  if (halo) {
+    halo.setAttribute('cx', px);
+    halo.setAttribute('cy', py);
+    halo.setAttribute('fill', fill);
   }
 
-  svg.innerHTML = html;
+  const circle = svg.querySelector(`circle[data-idx="${idx}"]`);
+  if (circle) {
+    circle.setAttribute('cx', px);
+    circle.setAttribute('cy', py);
+    circle.setAttribute('fill', fill);
+  }
+
+  const label = svg.querySelector(`text[data-idx="${idx}"]`);
+  if (label) {
+    label.setAttribute('x', px);
+    label.setAttribute('y', parseFloat(py) - 10);
+    label.setAttribute('fill', fill);
+    label.textContent = map[idx].rate !== null ? map[idx].rate.toFixed(2) + '%' : 'REJ';
+  }
+
+  const path = svg.querySelector('#conn-path');
+  if (path) {
+    let d = '';
+    for (let i = 0; i < map.length; i++) {
+      const pxi = xToPx(map[i].risk).toFixed(1);
+      const pyi = yToPx(map[i].rate).toFixed(1);
+      d += (i === 0 ? 'M' : 'L') + pxi + ',' + pyi;
+    }
+    path.setAttribute('d', d);
+  }
+}
+
+function getMap() {
+  return getState().riskRateMap || [];
+}
+
+function setMap(map) {
+  getState().riskRateMap = map;
 }
 
 function getPointerCoords(e) {
@@ -176,39 +228,49 @@ function getTouchCoords(e) {
   return { x: t.clientX - rect.left, y: t.clientY - rect.top };
 }
 
+function showDragHalo(idx) {
+  const halo = svg.querySelector(`circle[data-halo-idx="${idx}"]`);
+  if (halo) halo.setAttribute('fill-opacity', '0.15');
+}
+
+function hideDragHalo(idx) {
+  const halo = svg.querySelector(`circle[data-halo-idx="${idx}"]`);
+  if (halo) halo.setAttribute('fill-opacity', '0');
+}
+
+function addPointAt(px, py) {
+  const map = getMap();
+  if (map.length >= 20) return;
+  const risk = clamp(snap(pxToX(px), X_STEP), X_MIN, X_MAX);
+  const rawRate = snap(pxToY(py), X_STEP);
+  const rate = rawRate <= REJECT_THRESHOLD ? clamp(rawRate, Y_MIN, REJECT_THRESHOLD) : null;
+  if (map.some(p => Math.abs(p.risk - risk) < 0.01)) return;
+  const newMap = [...map, { risk, rate }].sort((a, b) => a.risk - b.risk);
+  setMap(newMap);
+  renderPoints();
+}
+
 function processPointerDown(mx, my, e) {
   const el = e.target.closest('circle');
   if (el) {
-    // Right-click on point = delete (non-endpoints only)
     if (e.button === 2) {
       const idx = parseInt(el.dataset.idx);
       const map = getMap();
       if (idx > 0 && idx < map.length - 1) {
         const newMap = map.filter((_, i) => i !== idx);
         setMap(newMap);
-        render();
+        renderPoints();
       }
       return true;
     }
-    // Left-click = start drag
     if (e.button === 0) {
       dragIdx = parseInt(el.dataset.idx);
-      draggedOut = false;
+      showDragHalo(dragIdx);
     }
     return true;
   }
-
-  // Left-click on empty space = add point
   if (e.button !== 0) return true;
-  const map = getMap();
-  if (map.length >= 20) return true;
-  const risk = clamp(snap(pxToX(mx), X_STEP), X_MIN, X_MAX);
-  const rawRate = snap(pxToY(my), X_STEP);
-  const rate = rawRate <= REJECT_THRESHOLD ? clamp(rawRate, Y_MIN, REJECT_THRESHOLD) : null;
-  if (map.some(p => Math.abs(p.risk - risk) < 0.01)) return true;
-  const newMap = [...map, { risk, rate }].sort((a, b) => a.risk - b.risk);
-  setMap(newMap);
-  render();
+  addPointAt(mx, my);
   return true;
 }
 
@@ -217,12 +279,11 @@ function processPointerMove(mx, my) {
   const map = getMap();
   if (!map[dragIdx]) return;
 
-  // Clamp coordinates to plot bounds so dragging works even if finger drifts outside
   const clampedMx = clamp(mx, MARGIN.left, MARGIN.left + innerW);
   const clampedMy = clamp(my, MARGIN.top, MARGIN.top + innerH);
 
-  const risk = clamp(snap(pxToX(clampedMx), X_STEP), X_MIN, X_MAX);
-  const rawRate = snap(pxToY(clampedMy), X_STEP);
+  const risk = clamp(pxToX(clampedMx), X_MIN, X_MAX);
+  const rawRate = pxToY(clampedMy);
   const inReject = rawRate > REJECT_THRESHOLD;
   const rate = inReject ? null : clamp(rawRate, Y_MIN, REJECT_THRESHOLD);
 
@@ -233,13 +294,31 @@ function processPointerMove(mx, my) {
 
   map[dragIdx] = { risk: finalRisk, rate };
   setMap(map);
-  render();
+  updatePointDuringDrag(dragIdx);
 }
 
 function processPointerUp() {
   if (dragIdx < 0) return;
+
+  const map = getMap();
+  if (map[dragIdx]) {
+    let snappedRate = map[dragIdx].rate;
+    if (snappedRate !== null) {
+      snappedRate = snap(snappedRate, Y_STEP);
+      snappedRate = clamp(snappedRate, Y_MIN, REJECT_THRESHOLD);
+      if (snappedRate > REJECT_THRESHOLD) snappedRate = null;
+    }
+    map[dragIdx] = {
+      risk: snap(map[dragIdx].risk, X_STEP),
+      rate: snappedRate,
+    };
+    setMap(map);
+  }
+
+  hideDragHalo(dragIdx);
+  renderPoints();
   dragIdx = -1;
-  draggedOut = false;
+  touchIdentifier = -1;
   updateAll();
 }
 
@@ -263,51 +342,76 @@ function onTouchStart(e) {
   const t = e.touches[0];
   touchStartX = t.clientX;
   touchStartY = t.clientY;
+  touchIdentifier = t.identifier;
   const rect = svg.getBoundingClientRect();
   const mx = t.clientX - rect.left;
   const my = t.clientY - rect.top;
-  // Proximity-based hit detection — find nearest circle within 20px
-  const circles = svg.querySelectorAll('circle');
+
+  const circles = svg.querySelectorAll('circle[data-idx]');
+  let nearestDist = TOUCH_HIT_RADIUS * TOUCH_HIT_RADIUS;
+  let nearestIdx = -1;
   for (const circle of circles) {
     const cx = parseFloat(circle.getAttribute('cx'));
     const cy = parseFloat(circle.getAttribute('cy'));
     const dx = mx - cx;
     const dy = my - cy;
-    if (dx * dx + dy * dy < 400) {
-      dragIdx = parseInt(circle.dataset.idx);
-      draggedOut = false;
-      e.preventDefault();
-      return;
+    const dist = dx * dx + dy * dy;
+    if (dist < nearestDist) {
+      nearestDist = dist;
+      nearestIdx = parseInt(circle.dataset.idx);
     }
+  }
+  if (nearestIdx >= 0) {
+    dragIdx = nearestIdx;
+    showDragHalo(nearestIdx);
+    e.preventDefault();
   }
 }
 
 function onTouchMove(e) {
-  if (e.touches.length === 0 || dragIdx < 0) return;
+  if (dragIdx < 0 || e.touches.length === 0) return;
+  const t = e.touches[0];
+  if (t.identifier !== touchIdentifier) return;
   const { x, y } = getTouchCoords(e);
   processPointerMove(x, y);
+  e.preventDefault();
 }
 
 function onTouchEnd(e) {
   const wasDragging = dragIdx >= 0;
   processPointerUp();
   if (wasDragging) return;
-  // Check if it was a tap (no significant movement) — add point
+
   const changed = e.changedTouches[0];
   if (!changed) return;
   const dx = changed.clientX - touchStartX;
   const dy = changed.clientY - touchStartY;
   if (Math.abs(dx) > 10 || Math.abs(dy) > 10) return;
+
   const rect = svg.getBoundingClientRect();
   const x = changed.clientX - rect.left;
   const y = changed.clientY - rect.top;
-  const map = getMap();
-  if (map.length >= 20) return;
-  const risk = clamp(snap(pxToX(x), X_STEP), X_MIN, X_MAX);
-  const rawRate = snap(pxToY(y), X_STEP);
-  const rate = rawRate <= REJECT_THRESHOLD ? clamp(rawRate, Y_MIN, REJECT_THRESHOLD) : null;
-  if (map.some(p => Math.abs(p.risk - risk) < 0.01)) return;
-  const newMap = [...map, { risk, rate }].sort((a, b) => a.risk - b.risk);
-  setMap(newMap);
-  render();
+  addPointAt(x, y);
+  touchIdentifier = -1;
+}
+
+export function updateToggle() {
+  const s = getState();
+  const container = document.getElementById('autoToggleContainer');
+  if (!container) return;
+  if (!s.autoLoanGraphUnlocked) {
+    container.style.display = 'none';
+    return;
+  }
+  container.style.display = '';
+  const enabled = s.autoLoanGraphEnabled !== false;
+  container.innerHTML =
+    '<div class="auto-toggle-row">' +
+      '<span class="auto-toggle-label">Auto-processing:</span>' +
+      '<label class="auto-toggle-switch">' +
+        '<input type="checkbox" id="autoGraphToggle" ' + (enabled ? 'checked' : '') + '>' +
+        '<span class="auto-toggle-slider"></span>' +
+      '</label>' +
+      '<span class="auto-toggle-status ' + (enabled ? 'auto-toggle-on' : 'auto-toggle-off') + '">' + (enabled ? 'ON' : 'OFF') + '</span>' +
+    '</div>';
 }

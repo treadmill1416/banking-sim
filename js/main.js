@@ -471,6 +471,18 @@ function bindEvents() {
     save();
   });
 
+  document.addEventListener('change', function (e) {
+    if (e.target.id === 'autoGraphToggle') {
+      getState().autoLoanGraphEnabled = e.target.checked;
+      const status = e.target.closest('.auto-toggle-row')?.querySelector('.auto-toggle-status');
+      if (status) {
+        status.textContent = e.target.checked ? 'ON' : 'OFF';
+        status.className = 'auto-toggle-status ' + (e.target.checked ? 'auto-toggle-on' : 'auto-toggle-off');
+      }
+      save();
+    }
+  });
+
   const mktSlider = document.getElementById('marketingSlider');
   if (mktSlider) {
     mktSlider.value = (getState().marketingLevel || 0);

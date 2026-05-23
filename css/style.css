@@ -357,13 +357,25 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 .research-rp-value{font-size:24px;font-weight:700;font-family:'SF Mono','Cascadia Code','Consolas',monospace}
 
 /* Risk graph card */
-.risk-graph-card .risk-graph-container{width:100%;overflow:hidden;touch-action:pan-y}
-.risk-graph-card svg{display:block;width:100%;height:auto;user-select:none;-webkit-user-select:none}
-.risk-graph-card svg circle{touch-action:none}
+.risk-graph-card .risk-graph-container{width:100%;overflow:hidden;touch-action:none}
+.risk-graph-card svg{display:block;width:100%;height:auto;user-select:none;-webkit-user-select:none;touch-action:none}
 .risk-graph-hint{font-size:12px;color:#9b9b9b;text-align:center;padding:6px 0 0 0;line-height:1.4;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
 .rg-reset-btn{padding:2px 10px;font-size:11px;font-weight:600;border:1px solid #ccc;border-radius:4px;background:#f5f5f5;color:#767676;cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap}
 .rg-reset-btn:hover{background:#e8e8e8;border-color:#aaa;color:#292929}
 @media(max-width:600px){.rg-reset-btn{padding:4px 10px;font-size:12px;min-height:30px}}
+.rg-drag-halo{fill:#2563eb;fill-opacity:0.15;stroke:none;pointer-events:none}
+.rg-dragging{fill-opacity:0.8!important;stroke-width:3!important;stroke:#fff!important}
+.auto-toggle-row{display:flex;align-items:center;justify-content:center;gap:8px;padding:6px 10px;margin:4px 0 0 0;background:var(--bg2,#f8f8f8);border-radius:6px;border:1px solid var(--border,#e0e0e0);width:100%;font-size:12px;color:#555}
+.auto-toggle-label{font-weight:600;margin-right:4px}
+.auto-toggle-switch{position:relative;display:inline-block;width:38px;height:20px;cursor:pointer}
+.auto-toggle-switch input{opacity:0;width:0;height:0}
+.auto-toggle-slider{position:absolute;inset:0;background:#ccc;border-radius:20px;transition:background .2s}
+.auto-toggle-slider::before{content:'';position:absolute;left:2px;bottom:2px;width:16px;height:16px;background:#fff;border-radius:50%;transition:transform .2s}
+.auto-toggle-switch input:checked+.auto-toggle-slider{background:#2563eb}
+.auto-toggle-switch input:checked+.auto-toggle-slider::before{transform:translateX(18px)}
+.auto-toggle-status{font-weight:600;min-width:28px}
+.auto-toggle-on{color:#2563eb}
+.auto-toggle-off{color:#999}
 .ggrid{stroke:#e0e0e0;stroke-width:1}
 .ggrid-major{stroke:#ccc;stroke-width:1}
 .ggrid-minor{stroke:#f0f0f0;stroke-width:0.5}

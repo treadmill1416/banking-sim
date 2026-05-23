@@ -11,7 +11,7 @@
 <!-- Header: game date, quarter, regime badge, and controls (speed, pause, reset, admin) -->
 <div class="header">
   <div style="display:flex;align-items:center;gap:10px">
-    <h1>Bank Runner <span class="version">v0.15.7a</span></h1>
+    <h1>Bank Runner <span class="version">v0.15.7b</span></h1>
     <span class="quarter" id="gameDate">Jan 1, 2026 00:00</span>
     <span class="quarter" id="quarter">Q1 2026</span>
     <span class="regime-badge" id="regimeBadge">NORMAL</span>
@@ -155,6 +155,7 @@
       <svg id="riskGraph"></svg>
     </div>
     <div class="risk-graph-hint">Drag points to set rates for each risk level. Points in the red zone are rejected. Click empty space to add a point. <button class="rg-reset-btn" id="resetCurveBtn">Reset Curve</button></div>
+    <div id="autoToggleContainer"></div>
   </div>
 
   <div class="grid-2col">

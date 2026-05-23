@@ -106,6 +106,7 @@ export const INITIAL = {
   researchPoints: 0,
   riskEstimateLevel: 0,
   autoLoanGraphUnlocked: false,
+  autoLoanGraphEnabled: true,
   marketingLevel: 0,
   branchLevel: 0,
   ledgerJournal: [], ledgerBalances: {}, ledgerNextId: 1,   _dailyInt: { depoInt: 0, resInt: 0, cbInt: 0 }, ledgerMonthStart: null, ledgerLastMonth: null,

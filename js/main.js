@@ -72,6 +72,7 @@ function tick() {
   updateUI();
   updatePnlDisplay();
   if (s.tick % 2 === 0) { updateLedgerDisplay(); updateAccountingTab(); }
+  updateResearchTab();
   updateCharts();
   updateRiskGraph();
   updateEventLog();

@@ -428,7 +428,7 @@ describe('processSalaries', () => {
 });
 
 describe('processAutoDecisions', () => {
-  beforeEach(() => { s.autoLoanGraphUnlocked = true; });
+  beforeEach(() => { s.autoLoanGraphUnlocked = true; s.autoLoanGraphEnabled = true; });
   it('does nothing when autoLoanGraphUnlocked is false', () => {
     s.autoLoanGraphUnlocked = false;
     s.tick = 50;

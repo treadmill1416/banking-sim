@@ -12,20 +12,29 @@ export function fmtCompact(n) {
   const sign = n < 0 ? '-' : '';
   const abs = Math.abs(n);
   if (abs >= 1e9) {
-    const v = (abs / 1e9).toFixed(1);
-    return sign + v.replace(/\.0$/, '') + 'B';
+    let v = (abs / 1e9).toFixed(1);
+    if (v.endsWith('.0')) v = v.slice(0, -2);
+    if (v.length > 3) v = (abs / 1e9).toFixed(0);
+    if (v === '1000') return sign + '1T';
+    return sign + v + 'B';
   }
   if (abs >= 1e6) {
-    const v = (abs / 1e6).toFixed(1);
-    return sign + v.replace(/\.0$/, '') + 'M';
+    let v = (abs / 1e6).toFixed(1);
+    if (v.endsWith('.0')) v = v.slice(0, -2);
+    if (v.length > 3) v = (abs / 1e6).toFixed(0);
+    if (v === '1000') return sign + '1B';
+    return sign + v + 'M';
   }
   if (abs >= 1e3) {
-    const v = (abs / 1e3).toFixed(1);
-    return sign + v.replace(/\.0$/, '') + 'K';
+    let v = (abs / 1e3).toFixed(1);
+    if (v.endsWith('.0')) v = v.slice(0, -2);
+    if (v.length > 3) v = (abs / 1e3).toFixed(0);
+    if (v === '1000') return sign + '1M';
+    return sign + v + 'K';
   }
-  const s = abs.toFixed(1);
-  const trimmed = s.replace(/\.0$/, '');
-  return sign + (trimmed.length > 4 ? abs.toFixed(0) : trimmed);
+  let s = abs.toFixed(1);
+  if (s.endsWith('.0')) s = s.slice(0, -2);
+  return sign + (s.length > 4 ? abs.toFixed(0) : s);
 }
 
 /** Format a number as a human-readable dollar string (e.g. "$1.5M", "$200K", "$0").

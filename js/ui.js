@@ -1,6 +1,6 @@
 import { getState } from './state.js';
 import { reserveRatio, equity, totalAssets, computeNim, computeRwa, trailingNpl, computeDefaultRate, activeLoanCapacity, countActiveLoans } from './mechanics.js';
-import { fmtDollar, fmtPct, escapeHtml, gameDateStr, quarterStr, fmtTicks } from './utils.js';
+import { fmtDollar, fmtPct, fmtCompact, escapeHtml, gameDateStr, quarterStr, fmtTicks } from './utils.js';
 import { TICKS_PER_MONTH, TICKS_PER_YEAR, HISTORY_MAX, LOAN_DEFAULT_DURATION, LOANS_PER_OFFICER, SALARY_PER_OFFICER, ANALYST_SALARY, RESEARCH_AUTO_GRAPH_COST, RESEARCH_ESTIMATE_COSTS, MAX_RISK_ESTIMATE_LEVEL, RESEARCH_BASE_RELATIVE_ERROR, RESEARCH_POINTS_PER_ANALYST, MAX_BRANCH_LEVEL, BRANCH_COSTS, BRANCH_CAPACITY_BONUS } from './constants.js';
 import { getBalance, getNetIncome, getCurrentMonthPnl, ACCOUNT_TYPES } from './ledger.js';
 
@@ -63,15 +63,16 @@ export function updateUI() {
     const eqClass = eq >= 0 ? 'tm-pos' : 'tm-neg';
     const nimClass = nim >= 0 ? 'tm-pos' : 'tm-neg';
     const nplClass = npl < 2 ? 'tm-pos' : npl < 5 ? 'tm-warn' : 'tm-neg';
+    const compactPct = (v) => fmtCompact(v) + '%';
     tm.innerHTML =
-      '<div class="tm-item"><span class="tm-label">Cash</span><span class="tm-value ' + (rr >= 1 ? '' : 'tm-neg') + '">' + fmtDollar(cash) + '</span></div>' +
-      '<div class="tm-item"><span class="tm-label">Loans</span><span class="tm-value">' + fmtDollar(loans) + '</span></div>' +
-      '<div class="tm-item"><span class="tm-label">Deposits</span><span class="tm-value">' + fmtDollar(deposits) + '</span></div>' +
-      '<div class="tm-item"><span class="tm-label">Equity</span><span class="tm-value ' + eqClass + '">' + fmtDollar(eq) + '</span></div>' +
-      '<div class="tm-item"><span class="tm-label">Reserve Ratio</span><span class="tm-value ' + rrClass + '">' + fmtPct(rr) + '</span></div>' +
-      '<div class="tm-item"><span class="tm-label">NIM</span><span class="tm-value ' + nimClass + '">' + fmtPct(nim) + '</span></div>' +
-      '<div class="tm-item"><span class="tm-label">NPL Ratio</span><span class="tm-value ' + nplClass + '">' + fmtPct(npl) + '</span></div>' +
-      '<div class="tm-item"><span class="tm-label">Research</span><span class="tm-value">' + (s.researchPoints || 0) + '</span></div>';
+      '<div class="tm-item"><span class="tm-label">Cash</span><span class="tm-value ' + (rr >= 1 ? '' : 'tm-neg') + '">' + fmtCompact(cash) + '</span></div>' +
+      '<div class="tm-item"><span class="tm-label">Loans</span><span class="tm-value">' + fmtCompact(loans) + '</span></div>' +
+      '<div class="tm-item"><span class="tm-label">Deposits</span><span class="tm-value">' + fmtCompact(deposits) + '</span></div>' +
+      '<div class="tm-item"><span class="tm-label">Equity</span><span class="tm-value ' + eqClass + '">' + fmtCompact(eq) + '</span></div>' +
+      '<div class="tm-item"><span class="tm-label">RR</span><span class="tm-value ' + rrClass + '">' + compactPct(rr) + '</span></div>' +
+      '<div class="tm-item"><span class="tm-label">NIM</span><span class="tm-value ' + nimClass + '">' + compactPct(nim) + '</span></div>' +
+      '<div class="tm-item"><span class="tm-label">NPL</span><span class="tm-value ' + nplClass + '">' + compactPct(npl) + '</span></div>' +
+      '<div class="tm-item"><span class="tm-label">Research</span><span class="tm-value">' + fmtCompact(s.researchPoints || 0) + '</span></div>';
   }
 
   const cntContainer = document.getElementById('acceptedLoanCount');

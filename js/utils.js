@@ -2,6 +2,32 @@ import { TICKS_PER_QUARTER, TICKS_PER_YEAR, TICKS_PER_MONTH } from './constants.
 
 /** @module utils - Pure formatting utility functions. No side effects, no state access. */
 
+/** Ultra-compact number formatter: max 4 chars including decimal point. No $ sign.
+ *  1,000+ → K/M/B suffix. Decimals trimmed to fit 4 chars.
+ *  @param {number|undefined|null} n
+ *  @returns {string} */
+export function fmtCompact(n) {
+  if (n === undefined || n === null || isNaN(n)) return '—';
+  if (Math.abs(n) < 0.5) return '0';
+  const sign = n < 0 ? '-' : '';
+  const abs = Math.abs(n);
+  if (abs >= 1e9) {
+    const v = (abs / 1e9).toFixed(1);
+    return sign + v.replace(/\.0$/, '') + 'B';
+  }
+  if (abs >= 1e6) {
+    const v = (abs / 1e6).toFixed(1);
+    return sign + v.replace(/\.0$/, '') + 'M';
+  }
+  if (abs >= 1e3) {
+    const v = (abs / 1e3).toFixed(1);
+    return sign + v.replace(/\.0$/, '') + 'K';
+  }
+  const s = abs.toFixed(1);
+  const trimmed = s.replace(/\.0$/, '');
+  return sign + (trimmed.length > 4 ? abs.toFixed(0) : trimmed);
+}
+
 /** Format a number as a human-readable dollar string (e.g. "$1.5M", "$200K", "$0").
  *  @param {number|undefined|null} n - The value to format.
  *  @returns {string} */

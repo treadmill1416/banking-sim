@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { fmtDollar, fmtPct, fmtTicks, gameDateStr, quarterStr } from './utils.js';
+import { fmtDollar, fmtPct, fmtCompact, fmtTicks, gameDateStr, quarterStr } from './utils.js';
 
 describe('fmtDollar', () => {
   it('returns "—" for null/undefined/NaN', () => {
@@ -33,6 +33,54 @@ describe('fmtDollar', () => {
   it('formats negative values', () => {
     expect(fmtDollar(-1500)).toBe('-$1.5K');
     expect(fmtDollar(-2e6)).toBe('-$2.00M');
+  });
+});
+
+describe('fmtCompact', () => {
+  it('returns "—" for null/undefined/NaN', () => {
+    expect(fmtCompact(null)).toBe('—');
+    expect(fmtCompact(undefined)).toBe('—');
+    expect(fmtCompact(NaN)).toBe('—');
+  });
+
+  it('returns "0" for near-zero', () => {
+    expect(fmtCompact(0)).toBe('0');
+    expect(fmtCompact(0.4)).toBe('0');
+  });
+
+  it('formats thousands with K suffix (≤4 chars)', () => {
+    const result = fmtCompact(500000);
+    expect(result).toBe('500K');
+    expect(result.length).toBeLessThanOrEqual(4);
+  });
+
+  it('formats millions with M suffix (≤4 chars)', () => {
+    expect(fmtCompact(5e6)).toBe('5M');
+    expect(fmtCompact(5.5e6)).toBe('5.5M');
+    expect(fmtCompact(50e6)).toBe('50M');
+    expect(fmtCompact(8e6)).toBe('8M');
+  });
+
+  it('formats billions with B suffix (≤4 chars)', () => {
+    expect(fmtCompact(1.5e9)).toBe('1.5B');
+    expect(fmtCompact(10e9)).toBe('10B');
+  });
+
+  it('formats small numbers without suffix (≤4 chars)', () => {
+    expect(fmtCompact(5)).toBe('5');
+    expect(fmtCompact(5.5)).toBe('5.5');
+    expect(fmtCompact(0.5)).toBe('0.5');
+  });
+
+  it('formats negative values', () => {
+    expect(fmtCompact(-500000)).toBe('-500K');
+    expect(fmtCompact(-5e6)).toBe('-5M');
+  });
+
+  it('never exceeds 4 characters', () => {
+    for (const v of [0, 5, 999, 1000, 500000, 5e6, 5.5e6, 1e9, 1.5e9, 10e9]) {
+      expect(fmtCompact(v).length).toBeLessThanOrEqual(4);
+    }
   });
 });
 

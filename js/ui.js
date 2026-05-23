@@ -244,10 +244,10 @@ function pnlDeltaStr(n) {
   return '(' + sign + abs + ')';
 }
 
-/** Build a P&L table row: label | value (right-aligned) | delta (right-aligned). */
-function pnlRow(label, cls, value, delta) {
-  const d = delta !== undefined ? pnlDeltaStr(delta) : '';
-  return '<tr' + (cls ? ' class="' + cls + '"' : '') + '><td>' + label + '</td><td class="pnl-num">' + value + '</td><td class="pnl-del">' + d + '</td></tr>';
+/** Build a P&L table row: label | value (right-aligned) | last month (right-aligned). */
+function pnlRow(label, cls, value, prevVal) {
+  const p = prevVal !== undefined ? pnlSigned(prevVal) : '—';
+  return '<tr' + (cls ? ' class="' + cls + '"' : '') + '><td>' + label + '</td><td class="pnl-num">' + value + '</td><td class="pnl-del">' + p + '</td></tr>';
 }
 
 /** Compute net P&L from a period object. */
@@ -274,17 +274,17 @@ export function updatePnlDisplay() {
   body.innerHTML =
     '<div class="pnl-progress">Month ' + pctDisplay + '% complete</div>' +
     '<table class="pnl-table">' +
-    '<thead><tr><th class="pnl-th-l">Item</th><th class="pnl-th-r">Amount</th><th class="pnl-th-r">Change</th></tr></thead>' +
+    '<thead><tr><th class="pnl-th-l">Item</th><th class="pnl-th-r">Amount</th><th class="pnl-th-r">Last Month</th></tr></thead>' +
     '<tbody>' +
-    pnlRow('Loan Interest <span class="tip" data-tip="Interest earned on the loan portfolio">?</span>', 'pnl-income', pnlSigned(cur.interestIncome), (cur.interestIncome || 0) - (prev.interestIncome || 0)) +
-    pnlRow('Interest on Cash <span class="tip" data-tip="Interest earned on cash reserves at the central bank deposit facility">?</span>', 'pnl-income', pnlSigned(cur.reserveInterestIncome), (cur.reserveInterestIncome || 0) - (prev.reserveInterestIncome || 0)) +
-    pnlRow('Deposit Interest <span class="tip" data-tip="Interest paid to depositors on their deposits">?</span>', 'pnl-expense', pnlSigned(-(cur.interestExpense || 0)), neg(cur.interestExpense || 0) - neg(prev.interestExpense || 0)) +
-    pnlRow('Central Bank Interest <span class="tip" data-tip="Interest paid on borrowings from the central bank">?</span>', 'pnl-expense', pnlSigned(-(cur.cbInterestExpense || 0)), neg(cur.cbInterestExpense || 0) - neg(prev.cbInterestExpense || 0)) +
-    pnlRow('Salaries <span class="tip" data-tip="Monthly salaries for loan officers and risk analysts">?</span>', 'pnl-expense', pnlSigned(-(cur.salaryExpense || 0)), neg(cur.salaryExpense || 0) - neg(prev.salaryExpense || 0)) +
-    pnlRow('Insurance <span class="tip" data-tip="Deposit insurance premium, charged monthly on covered deposits">?</span>', 'pnl-expense', pnlSigned(-(cur.insuranceExpense || 0)), neg(cur.insuranceExpense || 0) - neg(prev.insuranceExpense || 0)) +
-    pnlRow('Credit Losses <span class="tip" data-tip="Losses from loan defaults and write-offs">?</span>', 'pnl-expense', pnlSigned(-(cur.defaultLosses || 0)), neg(cur.defaultLosses || 0) - neg(prev.defaultLosses || 0)) +
+    pnlRow('Loan Interest <span class="tip" data-tip="Interest earned on the loan portfolio">?</span>', 'pnl-income', pnlSigned(cur.interestIncome), (prev.interestIncome || 0)) +
+    pnlRow('Interest on Cash <span class="tip" data-tip="Interest earned on cash reserves at the central bank deposit facility">?</span>', 'pnl-income', pnlSigned(cur.reserveInterestIncome), (prev.reserveInterestIncome || 0)) +
+    pnlRow('Deposit Interest <span class="tip" data-tip="Interest paid to depositors on their deposits">?</span>', 'pnl-expense', pnlSigned(-(cur.interestExpense || 0)), -(prev.interestExpense || 0)) +
+    pnlRow('Central Bank Interest <span class="tip" data-tip="Interest paid on borrowings from the central bank">?</span>', 'pnl-expense', pnlSigned(-(cur.cbInterestExpense || 0)), -(prev.cbInterestExpense || 0)) +
+    pnlRow('Salaries <span class="tip" data-tip="Monthly salaries for loan officers and risk analysts">?</span>', 'pnl-expense', pnlSigned(-(cur.salaryExpense || 0)), -(prev.salaryExpense || 0)) +
+    pnlRow('Insurance <span class="tip" data-tip="Deposit insurance premium, charged monthly on covered deposits">?</span>', 'pnl-expense', pnlSigned(-(cur.insuranceExpense || 0)), -(prev.insuranceExpense || 0)) +
+    pnlRow('Credit Losses <span class="tip" data-tip="Losses from loan defaults and write-offs">?</span>', 'pnl-expense', pnlSigned(-(cur.defaultLosses || 0)), -(prev.defaultLosses || 0)) +
     '<tr class="pnl-divider-row"><td colspan="3"></td></tr>' +
-    pnlRow('Net Income <span class="tip" data-tip="Total income minus total expenses for the current month">?</span>', netCur >= 0 ? 'pnl-income pnl-total' : 'pnl-expense pnl-total', pnlSigned(netCur), netCur - netPrev) +
+    pnlRow('Net Income <span class="tip" data-tip="Total income minus total expenses for the current month">?</span>', netCur >= 0 ? 'pnl-income pnl-total' : 'pnl-expense pnl-total', pnlSigned(netCur), netPrev) +
     '</tbody></table>';
 }
 
@@ -349,7 +349,13 @@ export function updateLoanApps() {
   for (const e of s.eventLog) {
     if (e.type === 'loan_request' && e.approved === undefined) pending.push(e);
   }
-  const key = pending.length + ':' + pending.map(e => e.loanRequestId + ':' + e.approved).join('|');
+  pending.sort((a, b) => {
+    const aReject = a.suggestedRate === null || a.suggestedRate === undefined;
+    const bReject = b.suggestedRate === null || b.suggestedRate === undefined;
+    if (aReject !== bReject) return aReject ? 1 : -1;
+    return b.tick - a.tick;
+  });
+  const key = pending.length + ':' + pending.map(e => e.loanRequestId + ':' + e.approved + ':' + (e.suggestedRate == null ? 'r' : 'a')).join('|');
   if (key === updateLoanApps._lastKey && container.innerHTML !== '') return;
   updateLoanApps._lastKey = key;
   // Preserve slider values across re-render

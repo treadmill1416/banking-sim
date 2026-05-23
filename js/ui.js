@@ -244,9 +244,9 @@ function pnlDeltaStr(n) {
   return '(' + sign + abs + ')';
 }
 
-/** Build a P&L table row: label | value (right-aligned) | last month (right-aligned). */
+/** Build a P&L table row: label | value (right-aligned) | last month total (right-aligned). */
 function pnlRow(label, cls, value, prevVal) {
-  const p = prevVal !== undefined ? pnlSigned(prevVal) : '—';
+  const p = typeof prevVal === 'string' ? prevVal : (prevVal !== undefined ? fmtDollar(Math.abs(prevVal)) : '—');
   return '<tr' + (cls ? ' class="' + cls + '"' : '') + '><td>' + label + '</td><td class="pnl-num">' + value + '</td><td class="pnl-del">' + p + '</td></tr>';
 }
 
@@ -278,13 +278,13 @@ export function updatePnlDisplay() {
     '<tbody>' +
     pnlRow('Loan Interest <span class="tip" data-tip="Interest earned on the loan portfolio">?</span>', 'pnl-income', pnlSigned(cur.interestIncome), (prev.interestIncome || 0)) +
     pnlRow('Interest on Cash <span class="tip" data-tip="Interest earned on cash reserves at the central bank deposit facility">?</span>', 'pnl-income', pnlSigned(cur.reserveInterestIncome), (prev.reserveInterestIncome || 0)) +
-    pnlRow('Deposit Interest <span class="tip" data-tip="Interest paid to depositors on their deposits">?</span>', 'pnl-expense', pnlSigned(-(cur.interestExpense || 0)), -(prev.interestExpense || 0)) +
-    pnlRow('Central Bank Interest <span class="tip" data-tip="Interest paid on borrowings from the central bank">?</span>', 'pnl-expense', pnlSigned(-(cur.cbInterestExpense || 0)), -(prev.cbInterestExpense || 0)) +
-    pnlRow('Salaries <span class="tip" data-tip="Monthly salaries for loan officers and risk analysts">?</span>', 'pnl-expense', pnlSigned(-(cur.salaryExpense || 0)), -(prev.salaryExpense || 0)) +
-    pnlRow('Insurance <span class="tip" data-tip="Deposit insurance premium, charged monthly on covered deposits">?</span>', 'pnl-expense', pnlSigned(-(cur.insuranceExpense || 0)), -(prev.insuranceExpense || 0)) +
-    pnlRow('Credit Losses <span class="tip" data-tip="Losses from loan defaults and write-offs">?</span>', 'pnl-expense', pnlSigned(-(cur.defaultLosses || 0)), -(prev.defaultLosses || 0)) +
+    pnlRow('Deposit Interest <span class="tip" data-tip="Interest paid to depositors on their deposits">?</span>', 'pnl-expense', pnlSigned(-(cur.interestExpense || 0)), (prev.interestExpense || 0)) +
+    pnlRow('Central Bank Interest <span class="tip" data-tip="Interest paid on borrowings from the central bank">?</span>', 'pnl-expense', pnlSigned(-(cur.cbInterestExpense || 0)), (prev.cbInterestExpense || 0)) +
+    pnlRow('Salaries <span class="tip" data-tip="Monthly salaries for loan officers and risk analysts">?</span>', 'pnl-expense', pnlSigned(-(cur.salaryExpense || 0)), (prev.salaryExpense || 0)) +
+    pnlRow('Insurance <span class="tip" data-tip="Deposit insurance premium, charged monthly on covered deposits">?</span>', 'pnl-expense', pnlSigned(-(cur.insuranceExpense || 0)), (prev.insuranceExpense || 0)) +
+    pnlRow('Credit Losses <span class="tip" data-tip="Losses from loan defaults and write-offs">?</span>', 'pnl-expense', pnlSigned(-(cur.defaultLosses || 0)), (prev.defaultLosses || 0)) +
     '<tr class="pnl-divider-row"><td colspan="3"></td></tr>' +
-    pnlRow('Net Income <span class="tip" data-tip="Total income minus total expenses for the current month">?</span>', netCur >= 0 ? 'pnl-income pnl-total' : 'pnl-expense pnl-total', pnlSigned(netCur), netPrev) +
+    pnlRow('Net Income <span class="tip" data-tip="Total income minus total expenses for the current month">?</span>', netCur >= 0 ? 'pnl-income pnl-total' : 'pnl-expense pnl-total', pnlSigned(netCur), pnlSigned(netPrev)) +
     '</tbody></table>';
 }
 

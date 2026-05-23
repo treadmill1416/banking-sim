@@ -430,7 +430,7 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
   .chart-card{padding:4px}
   .chart-card svg{height:90px}
   .top-metrics{flex-wrap:wrap}
-  .tm-item{padding:4px 2px}
+  .tm-item{flex:1 1 25%;padding:4px 2px;border:none}
   .tm-label{font-size:8px}
   .tm-value{font-size:12px}
   .bs-table{font-size:11px}

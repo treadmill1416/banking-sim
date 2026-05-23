@@ -70,7 +70,8 @@ export function updateUI() {
       '<div class="tm-item"><span class="tm-label">Equity</span><span class="tm-value ' + eqClass + '">' + fmtDollar(eq) + '</span></div>' +
       '<div class="tm-item"><span class="tm-label">Reserve Ratio</span><span class="tm-value ' + rrClass + '">' + fmtPct(rr) + '</span></div>' +
       '<div class="tm-item"><span class="tm-label">NIM</span><span class="tm-value ' + nimClass + '">' + fmtPct(nim) + '</span></div>' +
-      '<div class="tm-item"><span class="tm-label">NPL Ratio</span><span class="tm-value ' + nplClass + '">' + fmtPct(npl) + '</span></div>';
+      '<div class="tm-item"><span class="tm-label">NPL Ratio</span><span class="tm-value ' + nplClass + '">' + fmtPct(npl) + '</span></div>' +
+      '<div class="tm-item"><span class="tm-label">Research</span><span class="tm-value">' + (s.researchPoints || 0) + '</span></div>';
   }
 
   const cntContainer = document.getElementById('acceptedLoanCount');

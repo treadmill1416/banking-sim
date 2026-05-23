@@ -30,8 +30,6 @@ function tick() {
   updateLedgerPnl(s);
   processSalaries(s);
   processResearch(s);
-  const rpEl = document.querySelector('.research-rp-value');
-  if (rpEl) rpEl.textContent = '⭐ ' + ((s.researchPoints || 0));
   processLoanPayments(s);
   tryDepositFlow(s);
   tryDepositStability(s);
